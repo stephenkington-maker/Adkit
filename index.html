@@ -930,9 +930,88 @@ function HomePage({onSelect}){
   );
 }
 
+// ─── CONTACT FORM ─────────────────────────────────────────────────────────────
+function ContactForm({open,onClose}){
+  const[form,setForm]=useState({name:"",email:"",company:"",comments:""});
+  const[status,setStatus]=useState(null);
+  const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
+  const submit=async e=>{
+    e.preventDefault();setStatus("sending");
+    try{
+      const res=await fetch("https://formsubmit.co/ajax/info@weareasset.co.uk",{
+        method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
+        body:JSON.stringify({name:form.name,email:form.email,company:form.company,message:form.comments,_subject:"Flick Suite — Sponsorship Enquiry",_captcha:"false"})
+      });
+      const d=await res.json();
+      setStatus(d.success==="true"||d.success===true?"sent":"error");
+    }catch{setStatus("error")}
+  };
+  const IS={width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#e8e8f2",fontSize:13,outline:"none",fontFamily:"inherit"};
+  const LBL={fontSize:10,fontWeight:700,color:"#6b7280",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:4,display:"block"};
+  const pw=Math.min(380,window.innerWidth);
+  return(
+    <>
+      <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(0,0,0,0.55)",zIndex:200,opacity:open?1:0,pointerEvents:open?"all":"none",transition:"opacity 0.3s",backdropFilter:"blur(4px)"}}/>
+      <div style={{position:"fixed",top:0,left:0,bottom:0,width:pw,background:"#0f0f1c",borderRight:"1px solid rgba(255,255,255,0.08)",zIndex:201,transform:open?"translateX(0)":"translateX(-100%)",transition:"transform 0.35s cubic-bezier(0.4,0,0.2,1)",display:"flex",flexDirection:"column",boxShadow:"4px 0 40px rgba(0,0,0,0.6)",overflowY:"auto"}}>
+        <div style={{padding:"20px 20px 16px",borderBottom:"1px solid rgba(255,255,255,0.07)",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <div>
+            <div style={{fontSize:16,fontWeight:900,letterSpacing:"-0.3px",color:"#e8e8f2"}}>Advertise with us</div>
+            <div style={{fontSize:11,color:"#6b7280",marginTop:2}}>Reach thousands of marketers and founders</div>
+          </div>
+          <button onClick={onClose} style={{width:30,height:30,borderRadius:99,background:"rgba(255,255,255,0.06)",border:"1px solid rgba(255,255,255,0.1)",color:"#9ca3af",fontSize:14,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+        </div>
+        <div style={{padding:"20px",display:"flex",flexDirection:"column",gap:16,flex:1}}>
+          {status==="sent"?(
+            <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,padding:"40px 20px",textAlign:"center",flex:1}}>
+              <div style={{width:56,height:56,borderRadius:"50%",background:"rgba(52,211,153,0.15)",border:"1px solid rgba(52,211,153,0.3)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>✓</div>
+              <div style={{fontSize:17,fontWeight:800,color:"#e8e8f2"}}>Message sent!</div>
+              <div style={{fontSize:13,color:"#6b7280",lineHeight:1.6}}>Thanks for reaching out. We will get back to you within 24 hours.</div>
+              <button onClick={()=>{setStatus(null);setForm({name:"",email:"",company:"",comments:""});onClose()}} style={{marginTop:8,padding:"10px 24px",borderRadius:9,background:"linear-gradient(135deg,#7c3aed,#ec4899)",border:"none",color:"#fff",fontSize:13,fontWeight:700,cursor:"pointer"}}>Close</button>
+            </div>
+          ):(
+            <form onSubmit={submit} style={{display:"flex",flexDirection:"column",gap:14}}>
+              <div style={{padding:"12px 14px",borderRadius:10,background:"rgba(124,58,237,0.08)",border:"1px solid rgba(124,58,237,0.2)"}}>
+                <div style={{fontSize:12,color:"#c4b5fd",lineHeight:1.6}}>Place your brand in front of performance marketers, founders and Shopify brands using Flick Suite every day.</div>
+              </div>
+              <div><label style={LBL}>Your name *</label><input required value={form.name} onChange={set("name")} placeholder="Jane Smith" style={IS}/></div>
+              <div><label style={LBL}>Email address *</label><input required type="email" value={form.email} onChange={set("email")} placeholder="jane@company.com" style={IS}/></div>
+              <div><label style={LBL}>Company</label><input value={form.company} onChange={set("company")} placeholder="Acme Inc." style={IS}/></div>
+              <div><label style={LBL}>Tell us about your campaign *</label><textarea required value={form.comments} onChange={set("comments")} placeholder="Budget, goals, target audience, timeline..." rows={4} style={{...IS,resize:"vertical",minHeight:100}}/></div>
+              {status==="error"&&<div style={{fontSize:12,color:"#f87171",textAlign:"center"}}>Something went wrong — email us at info@weareasset.co.uk</div>}
+              <button type="submit" disabled={status==="sending"} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:status==="sending"?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#7c3aed,#ec4899)",color:status==="sending"?"#6b7280":"#fff",fontSize:14,fontWeight:800,cursor:status==="sending"?"not-allowed":"pointer",boxShadow:status==="sending"?"none":"0 0 20px rgba(124,58,237,0.28)"}}>
+                {status==="sending"?"Sending...":"Send Enquiry →"}
+              </button>
+              <p style={{fontSize:10,color:"#6b7280",textAlign:"center",lineHeight:1.5}}>Or email us at <a href="mailto:info@weareasset.co.uk" style={{color:"#a78bfa"}}>info@weareasset.co.uk</a></p>
+            </form>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ─── SPONSOR BANNER ───────────────────────────────────────────────────────────
+function SponsorBanner({onOpen}){
+  const[hov,setHov]=useState(false);
+  return(
+    <div style={{width:"100%",flexShrink:0,background:"linear-gradient(90deg,#0f0a1e 0%,#130d24 50%,#0f0a1e 100%)",borderTop:"1px solid rgba(124,58,237,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+      <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
+        <div style={{width:6,height:6,borderRadius:"50%",background:"#7c3aed",boxShadow:"0 0 6px #7c3aed",flexShrink:0}}/>
+        <span style={{fontSize:11,color:"#6b7280",fontWeight:500,flexShrink:0}}>Sponsorship</span>
+        <span style={{fontSize:11,color:"rgba(255,255,255,0.12)",flexShrink:0}}>·</span>
+        <span style={{fontSize:11,color:"#9ca3af",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>Reach <strong style={{color:"#e8e8f2"}}>performance marketers, founders & agencies</strong> using Flick Suite</span>
+      </div>
+      <button onMouseEnter={()=>setHov(true)} onMouseLeave={()=>setHov(false)} onClick={onOpen} style={{padding:"6px 16px",borderRadius:99,border:"1px solid",borderColor:hov?"rgba(124,58,237,0.8)":"rgba(124,58,237,0.4)",background:hov?"rgba(124,58,237,0.2)":"rgba(124,58,237,0.1)",color:hov?"#c4b5fd":"#a78bfa",fontSize:11,fontWeight:700,cursor:"pointer",transition:"all 0.18s",whiteSpace:"nowrap",flexShrink:0,letterSpacing:"0.03em"}}>
+        Advertise here →
+      </button>
+    </div>
+  );
+}
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 function Root(){
   const[activeApp,setActiveApp]=useState(null);
+  const[contactOpen,setContactOpen]=useState(false);
   const activeAppMeta=APPS.find(a=>a.id===activeApp);
   return(
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column"}}>
@@ -974,6 +1053,8 @@ function Root(){
           </div>
         )}
       </div>
+      <SponsorBanner onOpen={()=>setContactOpen(true)}/>
+      <ContactForm open={contactOpen} onClose={()=>setContactOpen(false)}/>
     </div>
   );
 }
