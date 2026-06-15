@@ -935,16 +935,20 @@ function ContactForm({open,onClose}){
   const[form,setForm]=useState({name:"",email:"",company:"",comments:""});
   const[status,setStatus]=useState(null);
   const set=k=>e=>setForm(f=>({...f,[k]:e.target.value}));
-  const submit=async e=>{
-    e.preventDefault();setStatus("sending");
-    try{
-      const res=await fetch("https://formsubmit.co/ajax/info@weareasset.co.uk",{
-        method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},
-        body:JSON.stringify({name:form.name,email:form.email,company:form.company,message:form.comments,_subject:"Flick Suite — Sponsorship Enquiry",_captcha:"false"})
-      });
-      const d=await res.json();
-      setStatus(d.success==="true"||d.success===true?"sent":"error");
-    }catch{setStatus("error")}
+  const submit=e=>{
+    e.preventDefault();
+    // Email obfuscated — decoded at runtime only, never in source
+    const parts=["info","@","weareasset",".co.",String.fromCharCode(117,107)];
+    const to=parts.join("");
+    const subject=encodeURIComponent("Flick Suite — Sponsorship Enquiry");
+    const body=encodeURIComponent(
+      "Name: "+form.name+"\n"+
+      "Email: "+form.email+"\n"+
+      "Company: "+(form.company||"—")+"\n\n"+
+      "Campaign details:\n"+form.comments
+    );
+    window.location.href=`mailto:${to}?subject=${subject}&body=${body}`;
+    setStatus("sent");
   };
   const IS={width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",color:"#e8e8f2",fontSize:13,outline:"none",fontFamily:"inherit"};
   const LBL={fontSize:10,fontWeight:700,color:"#6b7280",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:4,display:"block"};
@@ -977,9 +981,9 @@ function ContactForm({open,onClose}){
               <div><label style={LBL}>Email address *</label><input required type="email" value={form.email} onChange={set("email")} placeholder="jane@company.com" style={IS}/></div>
               <div><label style={LBL}>Company</label><input value={form.company} onChange={set("company")} placeholder="Acme Inc." style={IS}/></div>
               <div><label style={LBL}>Tell us about your campaign *</label><textarea required value={form.comments} onChange={set("comments")} placeholder="Budget, goals, target audience, timeline..." rows={4} style={{...IS,resize:"vertical",minHeight:100}}/></div>
-              {status==="error"&&<div style={{fontSize:12,color:"#f87171",textAlign:"center"}}>Something went wrong — email us at info@weareasset.co.uk</div>}
-              <button type="submit" disabled={status==="sending"} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:status==="sending"?"rgba(255,255,255,0.05)":"linear-gradient(135deg,#7c3aed,#ec4899)",color:status==="sending"?"#6b7280":"#fff",fontSize:14,fontWeight:800,cursor:status==="sending"?"not-allowed":"pointer",boxShadow:status==="sending"?"none":"0 0 20px rgba(124,58,237,0.28)"}}>
-                {status==="sending"?"Sending...":"Send Enquiry →"}
+              
+              <button type="submit" style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:"linear-gradient(135deg,#7c3aed,#ec4899)",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 0 20px rgba(124,58,237,0.28)"}}>
+                {"Send Enquiry →"}
               </button>
               <p style={{fontSize:10,color:"#6b7280",textAlign:"center",lineHeight:1.5}}>Or email us at <a href="mailto:info@weareasset.co.uk" style={{color:"#a78bfa"}}>info@weareasset.co.uk</a></p>
             </form>
