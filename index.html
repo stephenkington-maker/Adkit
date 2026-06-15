@@ -939,7 +939,7 @@ function ContactForm({open,onClose}){
     e.preventDefault();
     setStatus("sending");
     try{
-      const res=await fetch("https://weareasset.co.uk/flick-mail.php",{
+      const res=await fetch("/api/mail",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
