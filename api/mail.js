@@ -1,6 +1,6 @@
 const nodemailer = require("nodemailer");
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     service: "gmail",
     auth: {
       user: "stephenkington@googlemail.com",
-      pass: "Chickenwho12!",
+      pass: process.env.GMAIL_APP_PASSWORD,
     },
   });
 
@@ -45,4 +45,4 @@ export default async function handler(req, res) {
     console.error(err);
     return res.status(500).json({ success: false, message: err.message });
   }
-}
+};
