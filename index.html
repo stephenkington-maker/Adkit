@@ -1,0 +1,984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Flick Suite — Make Ads in Seconds</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&family=Bebas+Neue&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800&family=DM+Serif+Display&family=Montserrat:wght@700;800;900&family=Raleway:wght@700;800;900&family=Unbounded:wght@700;800;900&family=Cormorant+Garamond:wght@600;700&family=Archivo+Black&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body,#root{height:100%;width:100%}
+body{background:#090910;color:#e8e8f2;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+input,textarea,button{font-family:inherit}
+input[type=range]{accent-color:#7c3aed;cursor:pointer;width:100%}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
+@keyframes pulseGreen{0%,100%{box-shadow:0 0 16px rgba(52,211,153,0.15)}50%{box-shadow:0 0 28px rgba(52,211,153,0.4)}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useRef,useEffect,useCallback}=React;
+
+// ─── CONSTANTS ────────────────────────────────────────────────────────────────
+const FPS=30;
+const BG_MS=250;
+const RATIOS=[{label:"3:4",key:"3x4",w:900,h:1200},{label:"4:5",key:"4x5",w:960,h:1200},{label:"9:16",key:"9x16",w:675,h:1200}];
+const SLIDE_FRAMES=FPS*3;
+const HOOK_FRAMES=FPS*4;
+const DROP_FRAMES=FPS*5;
+const REVEAL_FRAMES=FPS*3;
+const REVEAL_HOLD=Math.round(FPS*0.8);
+const REVEAL_TRANS=REVEAL_FRAMES-REVEAL_HOLD*2;
+
+// ─── DESIGN TOKENS ────────────────────────────────────────────────────────────
+const C={
+  bg:"#090910",card:"#111120",border:"rgba(255,255,255,0.06)",
+  text:"#e8e8f2",muted:"#6b7280",subtle:"#374151",
+  purple:"#7c3aed",pink:"#ec4899",green:"#34d399",
+  blue:"#0ea5e9",amber:"#f59e0b",red:"#ef4444",emerald:"#10b981",
+};
+
+const APPS=[
+  {id:"flick",  name:"Flick",  icon:"⚡",color:C.purple, tag:"Brand"},
+  {id:"proof",  name:"Proof",  icon:"★", color:C.blue,   tag:"Reviews"},
+  {id:"hook",   name:"Hook",   icon:"🎣",color:C.amber,  tag:"Hooks"},
+  {id:"reveal", name:"Reveal", icon:"✦", color:C.emerald,tag:"B&A"},
+  {id:"drop",   name:"Drop",   icon:"🔥",color:C.red,    tag:"Promo"},
+];
+
+// ─── FONTS & COLOURS ──────────────────────────────────────────────────────────
+const GFONTS=[
+  {id:"Inter",              name:"Inter",        cat:"Sans"},
+  {id:"Space Grotesk",      name:"Space Grotesk",cat:"Sans"},
+  {id:"Montserrat",         name:"Montserrat",   cat:"Sans"},
+  {id:"Raleway",            name:"Raleway",      cat:"Sans"},
+  {id:"Syne",               name:"Syne",         cat:"Display"},
+  {id:"Unbounded",          name:"Unbounded",    cat:"Display"},
+  {id:"Archivo Black",      name:"Archivo Black",cat:"Display"},
+  {id:"Bebas Neue",         name:"Bebas Neue",   cat:"Display"},
+  {id:"Playfair Display",   name:"Playfair",     cat:"Serif"},
+  {id:"Cormorant Garamond", name:"Cormorant",    cat:"Serif"},
+  {id:"DM Serif Display",   name:"DM Serif",     cat:"Serif"},
+];
+
+const PALETTE=[
+  "#ffffff","#f8f8f8","#e8e8f2","#111118","#000000",
+  "#7c3aed","#ec4899","#0ea5e9","#10b981","#f59e0b",
+  "#ef4444","#f97316","#8b5cf6","#06b6d4","#84cc16",
+  "#fbbf24","#e879f9","#34d399","#fb923c","#60a5fa",
+];
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function easeOut(t){return 1-Math.pow(1-t,3)}
+function easeMid(t){return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2}
+function bounceOut(t){if(t<1/2.75)return 7.5625*t*t;if(t<2/2.75){t-=1.5/2.75;return 7.5625*t*t+0.75}if(t<2.5/2.75){t-=2.25/2.75;return 7.5625*t*t+0.9375}t-=2.625/2.75;return 7.5625*t*t+0.984375}
+function readFile(file){return new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result);fr.readAsDataURL(file)})}
+function loadImg(src){return new Promise(r=>{const i=new Image();i.onload=()=>r(i);i.src=src})}
+function ff(f){return`'${f}',sans-serif`}
+
+// ─── EXPORT HOOK ──────────────────────────────────────────────────────────────
+function useExport(renderFn,totalFrames,filename){
+  const[prog,setProg]=useState(0);
+  const[exporting,setExporting]=useState(false);
+  const[blob,setBlob]=useState(null);
+  const canvasRef=useRef(null);
+  const run=useCallback(async(w,h)=>{
+    setExporting(true);setProg(0);setBlob(null);
+    if(!canvasRef.current)canvasRef.current=document.createElement("canvas");
+    const canvas=canvasRef.current;canvas.width=w;canvas.height=h;
+    const stream=canvas.captureStream(FPS);
+    const rec=new MediaRecorder(stream,{mimeType:"video/webm",videoBitsPerSecond:8000000});
+    const chunks=[];
+    rec.ondataavailable=e=>{if(e.data?.size>0)chunks.push(e.data)};
+    rec.onstop=()=>{setBlob(new Blob(chunks,{type:"video/webm"}));setExporting(false);setProg(100)};
+    rec.start();let f=0;
+    await new Promise(res=>{
+      const iv=setInterval(()=>{
+        if(f>=totalFrames){clearInterval(iv);rec.requestData();setTimeout(()=>{rec.stop();res()},200);return}
+        renderFn(canvas,f);rec.requestData();f++;setProg(Math.round((f/totalFrames)*100));
+      },1000/FPS);
+    });
+  },[renderFn,totalFrames]);
+  const download=useCallback(()=>{
+    if(!blob)return;
+    const u=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=u;a.download=filename;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(u),2000);
+  },[blob,filename]);
+  return{run,download,prog,exporting,blob,setBlob};
+}
+
+// ─── SHARED UI COMPONENTS ─────────────────────────────────────────────────────
+function SLabel({n,title,color,opt}){
+  return(
+    <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:7}}>
+      <span style={{fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:color||C.purple}}>
+        <span style={{opacity:0.4}}>{n} </span>{title}
+      </span>
+      {opt&&<span style={{fontSize:8,color:C.muted,fontWeight:500}}>· optional</span>}
+    </div>
+  );
+}
+
+function DZ({id,accept,multi,onFiles,dragColor,children,compact}){
+  const[ov,setOv]=useState(false);
+  return(
+    <div
+      onDragOver={e=>{e.preventDefault();setOv(true)}}
+      onDragLeave={()=>setOv(false)}
+      onDrop={e=>{e.preventDefault();setOv(false);onFiles(Array.from(e.dataTransfer.files))}}
+      onClick={()=>document.getElementById(id)?.click()}
+      style={{border:`2px dashed ${ov?(dragColor||"rgba(124,58,237,0.7)"):"rgba(255,255,255,0.09)"}`,borderRadius:10,padding:compact?"10px":"13px 10px",cursor:"pointer",textAlign:"center",background:ov?"rgba(124,58,237,0.04)":"rgba(255,255,255,0.01)",transition:"border-color 0.15s"}}>
+      {children}
+      <input id={id} type="file" accept={accept} multiple={multi} style={{display:"none"}} onChange={e=>onFiles(Array.from(e.target.files))}/>
+    </div>
+  );
+}
+
+function Pill({active,onClick,color,children}){
+  const c=color||C.purple;
+  return(
+    <button onClick={onClick} style={{flex:1,padding:"8px 4px",border:"1px solid",borderColor:active?c:"rgba(255,255,255,0.09)",borderRadius:8,background:active?c+"22":"rgba(255,255,255,0.02)",color:active?"#c4b5fd":C.muted,cursor:"pointer",fontSize:11,fontWeight:700,transition:"all 0.14s",whiteSpace:"nowrap"}}>{children}</button>
+  );
+}
+
+function ExportArea({disabled,onRender,exporting,prog,blob,onDownload,label}){
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:8}}>
+      <button onClick={onRender} disabled={disabled} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:!disabled?"linear-gradient(135deg,#7c3aed,#ec4899)":"rgba(255,255,255,0.05)",color:!disabled?"#fff":C.muted,fontSize:14,fontWeight:800,cursor:!disabled?"pointer":"not-allowed",boxShadow:!disabled?"0 0 22px rgba(124,58,237,0.3)":"none",transition:"all 0.18s"}}>
+        {exporting?`Rendering… ${prog}%`:"⚙ Render Video"}
+      </button>
+      {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(255,255,255,0.06)",overflow:"hidden"}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
+      {blob&&!exporting&&<button onClick={onDownload} style={{width:"100%",padding:"13px",borderRadius:10,border:"1px solid rgba(52,211,153,0.4)",background:"rgba(52,211,153,0.08)",color:"#6ee7b7",fontSize:14,fontWeight:800,cursor:"pointer",animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {label} · {(blob.size/1024/1024).toFixed(1)} MB</button>}
+    </div>
+  );
+}
+
+function PreviewCanvas({canvasRef,W,H,empty,emptyIcon,emptyText}){
+  const pw=Math.min(window.innerWidth-32,280);
+  const ph=Math.round(pw*H/W);
+  return(
+    <div style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.07),0 16px 48px rgba(0,0,0,0.7)",background:"#111118",width:pw,height:ph,flexShrink:0,alignSelf:"center"}}>
+      <canvas ref={canvasRef} width={W} height={H} style={{width:pw,height:ph,display:"block"}}/>
+      {empty&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:26,opacity:0.1}}>{emptyIcon}</div><p style={{fontSize:11,color:"#4b5563",margin:0,textAlign:"center",padding:"0 16px"}}>{emptyText}</p></div>}
+    </div>
+  );
+}
+
+function PlayBtn({playing,onToggle,color}){
+  return(
+    <button onClick={onToggle} style={{padding:"6px 16px",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer",background:playing?"rgba(239,68,68,0.1)":`${color||C.purple}22`,border:`1px solid ${playing?"rgba(239,68,68,0.28)":`${color||C.purple}44`}`,color:playing?"#f87171":"#c4b5fd"}}>
+      {playing?"⏹ Stop":"▶ Play"}
+    </button>
+  );
+}
+
+function Hint({children}){return <p style={{fontSize:11,color:C.muted,textAlign:"center",margin:0,lineHeight:1.5}}>{children}</p>}
+
+function AudioChip({name,dur,onRemove}){
+  return(
+    <div style={{padding:"9px 11px",border:"1px solid rgba(52,211,153,0.28)",borderRadius:9,background:"rgba(52,211,153,0.05)",display:"flex",alignItems:"center",gap:8}}>
+      <span>♪</span>
+      <div style={{flex:1,minWidth:0}}><div style={{fontSize:11,fontWeight:600,color:"#6ee7b7",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{name}</div>{dur&&<div style={{fontSize:9,color:C.muted}}>{dur.toFixed(1)}s</div>}</div>
+      <button onClick={onRemove} style={{background:"rgba(239,68,68,0.13)",border:"1px solid rgba(239,68,68,0.22)",color:"#f87171",width:22,height:22,borderRadius:99,fontSize:9,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>✕</button>
+    </div>
+  );
+}
+
+// ─── FONT + COLOUR PICKER ─────────────────────────────────────────────────────
+function FontColorPicker({font,setFont,color,setColor,accent}){
+  const ac=accent||C.purple;
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:12,padding:"12px",background:"rgba(255,255,255,0.02)",borderRadius:10,border:"1px solid rgba(255,255,255,0.06)"}}>
+      <div>
+        <div style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:7}}>Font</div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
+          {GFONTS.map(f=>(
+            <button key={f.id} onClick={()=>setFont(f.id)} style={{padding:"7px 8px",borderRadius:7,border:"1px solid",borderColor:font===f.id?ac:"rgba(255,255,255,0.08)",background:font===f.id?ac+"22":"rgba(255,255,255,0.02)",cursor:"pointer",textAlign:"left",transition:"all 0.12s",display:"flex",flexDirection:"column",gap:1}}>
+              <span style={{fontFamily:`'${f.id}',sans-serif`,fontSize:13,fontWeight:700,color:font===f.id?"#e8e8f2":"#9ca3af",lineHeight:1.2}}>{f.name}</span>
+              <span style={{fontSize:8,color:"#6b7280",letterSpacing:"0.06em",textTransform:"uppercase"}}>{f.cat}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:7}}>Text Colour</div>
+        <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:8}}>
+          {PALETTE.map(c=>(
+            <button key={c} onClick={()=>setColor(c)} style={{width:22,height:22,borderRadius:5,background:c,border:"none",cursor:"pointer",outline:color===c?`2px solid ${ac}`:"2px solid transparent",outlineOffset:1,transition:"outline 0.1s",flexShrink:0}}/>
+          ))}
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <input type="color" value={color} onChange={e=>setColor(e.target.value)} style={{width:32,height:28,border:"none",background:"none",cursor:"pointer",padding:0,borderRadius:5}}/>
+          <span style={{fontSize:11,color:"#6b7280",fontFamily:"monospace"}}>{color}</span>
+          <div style={{width:18,height:18,borderRadius:4,background:color,border:"1px solid rgba(255,255,255,0.15)",flexShrink:0}}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── APP: FLICK ───────────────────────────────────────────────────────────────
+function FlickApp(){
+  const[logo,setLogo]=useState(null);
+  const[bgs,setBgs]=useState([]);
+  const[ratio,setRatio]=useState("9x16");
+  const[loops,setLoops]=useState(1);
+  const[audio,setAudio]=useState(null);
+  const[playing,setPlaying]=useState(false);
+  const[curBg,setCurBg]=useState(0);
+  const[logoScale,setLogoScale]=useState(55);
+  const[lx,setLx]=useState(50);
+  const[ly,setLy]=useState(50);
+  const[editMode,setEditMode]=useState(false);
+  const[overlayMode,setOverlayMode]=useState("logo");
+  const[textLine,setTextLine]=useState("YOUR BRAND");
+  const[textFont,setTextFont]=useState("Inter");
+  const[textColor,setTextColor]=useState("#ffffff");
+  const[textSize,setTextSize]=useState(60);
+
+  const prevRef=useRef(null);
+  const wrapRef=useRef(null);
+  const logoRef=useRef(null);
+  const bgRefs=useRef([]);
+  const animRef=useRef(null);
+  const startRef=useRef(null);
+  const bgIdxRef=useRef(0);
+  const posRef=useRef({x:50,y:50,s:55});
+  const dragRef=useRef({active:false,startX:0,startY:0,startLx:50,startLy:50});
+  const pinchRef=useRef({active:false,startDist:0,startScale:55});
+  // keep latest values accessible in event handlers without stale closure
+  const overlayRef=useRef({mode:"logo",text:"YOUR BRAND",font:"Inter",color:"#ffffff",size:60});
+
+  const R=RATIOS.find(r=>r.key===ratio);
+
+  useEffect(()=>{posRef.current={x:lx,y:ly,s:logoScale}},[lx,ly,logoScale]);
+  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize}},[overlayMode,textLine,textFont,textColor,textSize]);
+  useEffect(()=>{if(!logo){logoRef.current=null;return}loadImg(logo).then(i=>logoRef.current=i)},[logo]);
+  useEffect(()=>{bgRefs.current=new Array(bgs.length).fill(null);bgs.forEach((src,i)=>loadImg(src).then(im=>bgRefs.current[i]=im))},[bgs]);
+
+  const drawFrame=useCallback((canvas,bgIdx,showGuide)=>{
+    const ctx=canvas.getContext("2d");
+    const W=canvas.width,H=canvas.height;
+    ctx.clearRect(0,0,W,H);
+    const bg=bgRefs.current[bgIdx];
+    if(bg){const s=Math.max(W/bg.width,H/bg.height);const sw=bg.width*s,sh=bg.height*s;ctx.drawImage(bg,(W-sw)/2,(H-sh)/2,sw,sh)}
+    else{ctx.fillStyle="#111118";ctx.fillRect(0,0,W,H)}
+    ctx.globalAlpha=0.22;ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+    const{x,y,s:sc}=posRef.current;
+    const ov=overlayRef.current;
+    if(ov.mode==="text"&&ov.text){
+      const fs=Math.round(W*(ov.size/100)*0.12);
+      ctx.font=`900 ${fs}px ${ff(ov.font)}`;
+      ctx.fillStyle=ov.color;
+      ctx.textAlign="center";ctx.textBaseline="middle";
+      const words=ov.text.split(" ");let lines=[],cur="";
+      words.forEach(w=>{const t2=cur?cur+" "+w:w;if(ctx.measureText(t2).width>W*0.86&&cur){lines.push(cur);cur=w}else cur=t2});
+      if(cur)lines.push(cur);
+      const totalH=lines.length*fs*1.3;
+      const sy=H*y/100-totalH/2+fs/2;
+      lines.forEach((l,i)=>ctx.fillText(l,W*x/100,sy+i*fs*1.3));
+      ctx.textAlign="left";ctx.textBaseline="alphabetic";
+      if(showGuide){
+        ctx.strokeStyle="rgba(124,58,237,0.7)";ctx.lineWidth=2;ctx.setLineDash([6,4]);
+        ctx.strokeRect(W*x/100-W*ov.size/100/2,H*y/100-totalH/2-8,W*ov.size/100,totalH+16);
+        ctx.setLineDash([]);
+      }
+    } else {
+      const lg=logoRef.current;
+      if(lg){
+        const mw=W*(sc/100);const sf=Math.min(mw/lg.width,(H*0.8)/lg.height);
+        const lw=lg.width*sf,lh=lg.height*sf;
+        const lx_=W*x/100-lw/2,ly_=H*y/100-lh/2;
+        ctx.drawImage(lg,lx_,ly_,lw,lh);
+        if(showGuide){
+          ctx.save();
+          ctx.strokeStyle="rgba(124,58,237,0.9)";ctx.lineWidth=Math.max(2,W*0.004);
+          ctx.setLineDash([W*0.012,W*0.008]);ctx.strokeRect(lx_-4,ly_-4,lw+8,lh+8);ctx.setLineDash([]);
+          const hs=Math.max(6,W*0.018);
+          [[lx_-4,ly_-4],[lx_+lw+4-hs,ly_-4],[lx_-4,ly_+lh+4-hs],[lx_+lw+4-hs,ly_+lh+4-hs]].forEach(([cx,cy])=>{ctx.fillStyle="rgba(124,58,237,1)";ctx.fillRect(cx,cy,hs,hs)});
+          ctx.restore();
+        }
+      }
+    }
+  },[]);
+
+  const runPreview=useCallback(()=>{
+    const loop=ts=>{
+      if(!startRef.current)startRef.current=ts;
+      const el=ts-startRef.current;const cnt=Math.max(bgs.length,1);
+      const i=Math.floor(el/BG_MS)%cnt;
+      if(i!==bgIdxRef.current){bgIdxRef.current=i;setCurBg(i)}
+      if(prevRef.current)drawFrame(prevRef.current,i,editMode);
+      animRef.current=requestAnimationFrame(loop);
+    };
+    animRef.current=requestAnimationFrame(loop);
+  },[bgs,drawFrame,editMode]);
+
+  useEffect(()=>{
+    if(playing){startRef.current=null;bgIdxRef.current=0;runPreview()}
+    else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,editMode)},60)}
+    return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)};
+  },[playing,runPreview,drawFrame,editMode]);
+
+  useEffect(()=>{
+    if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,editMode)},60);
+  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,drawFrame,playing]);
+
+  useEffect(()=>{
+    const canvas=prevRef.current;const wrap=wrapRef.current;
+    if(!canvas||!wrap||!editMode)return;
+    const dist=(t1,t2)=>Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
+    const onMouseDown=e=>{e.preventDefault();dragRef.current={active:true,startX:e.clientX,startY:e.clientY,startLx:posRef.current.x,startLy:posRef.current.y}};
+    const onMouseMove=e=>{
+      if(!dragRef.current.active)return;
+      const r=canvas.getBoundingClientRect();
+      const dx=((e.clientX-dragRef.current.startX)/r.width)*100;
+      const dy=((e.clientY-dragRef.current.startY)/r.height)*100;
+      const nx=Math.max(0,Math.min(100,dragRef.current.startLx+dx));
+      const ny=Math.max(0,Math.min(100,dragRef.current.startLy+dy));
+      posRef.current={...posRef.current,x:nx,y:ny};setLx(Math.round(nx));setLy(Math.round(ny));
+    };
+    const onMouseUp=()=>{dragRef.current.active=false};
+    const onWheel=e=>{e.preventDefault();const ns=Math.max(5,Math.min(95,posRef.current.s+(e.deltaY>0?-2:2)));posRef.current={...posRef.current,s:ns};setLogoScale(Math.round(ns))};
+    const onTouchStart=e=>{
+      if(e.touches.length===1){const t=e.touches[0];dragRef.current={active:true,startX:t.clientX,startY:t.clientY,startLx:posRef.current.x,startLy:posRef.current.y};pinchRef.current.active=false}
+      else if(e.touches.length===2){dragRef.current.active=false;pinchRef.current={active:true,startDist:dist(e.touches[0],e.touches[1]),startScale:posRef.current.s}}
+    };
+    const onTouchMove=e=>{
+      e.preventDefault();
+      if(e.touches.length===1&&dragRef.current.active){const t=e.touches[0];const r=canvas.getBoundingClientRect();const dx=((t.clientX-dragRef.current.startX)/r.width)*100;const dy=((t.clientY-dragRef.current.startY)/r.height)*100;const nx=Math.max(0,Math.min(100,dragRef.current.startLx+dx));const ny=Math.max(0,Math.min(100,dragRef.current.startLy+dy));posRef.current={...posRef.current,x:nx,y:ny};setLx(Math.round(nx));setLy(Math.round(ny))}
+      else if(e.touches.length===2&&pinchRef.current.active){const d=dist(e.touches[0],e.touches[1]);const ns=Math.max(5,Math.min(95,pinchRef.current.startScale*d/pinchRef.current.startDist));posRef.current={...posRef.current,s:ns};setLogoScale(Math.round(ns))}
+    };
+    const onTouchEnd=()=>{dragRef.current.active=false;pinchRef.current.active=false};
+    canvas.addEventListener("mousedown",onMouseDown);
+    window.addEventListener("mousemove",onMouseMove);
+    window.addEventListener("mouseup",onMouseUp);
+    canvas.addEventListener("wheel",onWheel,{passive:false});
+    canvas.addEventListener("touchstart",onTouchStart,{passive:false});
+    canvas.addEventListener("touchmove",onTouchMove,{passive:false});
+    canvas.addEventListener("touchend",onTouchEnd);
+    return()=>{canvas.removeEventListener("mousedown",onMouseDown);window.removeEventListener("mousemove",onMouseMove);window.removeEventListener("mouseup",onMouseUp);canvas.removeEventListener("wheel",onWheel);canvas.removeEventListener("touchstart",onTouchStart);canvas.removeEventListener("touchmove",onTouchMove);canvas.removeEventListener("touchend",onTouchEnd)};
+  },[editMode]);
+
+  const framesPerBg=Math.round((BG_MS/1000)*FPS);
+  const totalFrames=loops*bgs.length*framesPerBg;
+  const renderFn=useCallback((canvas,f)=>drawFrame(canvas,Math.floor(f/framesPerBg)%bgs.length,false),[drawFrame,framesPerBg,bgs.length]);
+  const{run,download,prog,exporting,blob,setBlob}=useExport(renderFn,totalFrames,`flick-${ratio}-${loops}x.webm`);
+
+  const dur=((bgs.length*loops*BG_MS)/1000).toFixed(1);
+  const canExp=(overlayMode==="text"?textLine.trim().length>0:!!logo)&&bgs.length>0&&!exporting;
+  const R2=RATIOS.find(r=>r.key===ratio);
+  const pw=Math.min(window.innerWidth-32,280);
+  const ph=Math.round(pw*R2.h/R2.w);
+
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+      {/* 01 Content */}
+      <div>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
+          <label style={{fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:C.purple}}>01 Content</label>
+          <div style={{display:"flex",gap:4}}>
+            {[["logo","🏷 Logo"],["text","✏ Text"]].map(([m,lbl])=>(
+              <button key={m} onClick={()=>{setOverlayMode(m);setBlob(null)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid",borderColor:overlayMode===m?"rgba(124,58,237,0.6)":"rgba(255,255,255,0.08)",background:overlayMode===m?"rgba(124,58,237,0.2)":"rgba(255,255,255,0.02)",color:overlayMode===m?"#c4b5fd":"#6b7280",fontSize:10,fontWeight:700,cursor:"pointer"}}>{lbl}</button>
+            ))}
+          </div>
+        </div>
+        {overlayMode==="logo"?(
+          <DZ id="fl-logo" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setLogo(d);setBlob(null)}} dragColor="rgba(124,58,237,0.7)">
+            {logo?<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}><img src={logo} style={{maxWidth:100,maxHeight:56,objectFit:"contain",filter:"drop-shadow(0 0 12px rgba(124,58,237,0.5))"}} alt=""/><span style={{fontSize:10,color:"#a78bfa"}}>Tap to replace</span></div>:<><div style={{fontSize:22,opacity:0.25,marginBottom:5}}>⊕</div><div style={{fontSize:13,color:C.muted}}>Drop or tap — PNG / SVG</div><div style={{fontSize:10,color:C.subtle,marginTop:2}}>Transparent bg recommended</div></>}
+          </DZ>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <input value={textLine} onChange={e=>{setTextLine(e.target.value);setBlob(null)}} placeholder="YOUR BRAND" style={{width:"100%",padding:"11px 13px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:16,fontWeight:800,outline:"none",letterSpacing:"0.02em",fontFamily:ff(textFont)}}/>
+            <FontColorPicker font={textFont} setFont={f=>{setTextFont(f);setBlob(null)}} color={textColor} setColor={c=>{setTextColor(c);setBlob(null)}} accent={C.purple}/>
+            <div><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:"0.08em",textTransform:"uppercase"}}>Text Size</span><span style={{fontSize:9,color:C.muted}}>{textSize}%</span></div><input type="range" min="20" max="100" value={textSize} onChange={e=>{setTextSize(Number(e.target.value));setBlob(null)}}/></div>
+          </div>
+        )}
+        {overlayMode==="logo"&&logo&&(
+          <div style={{marginTop:8}}>
+            <button onClick={()=>{setEditMode(p=>!p);setPlaying(false)}} style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid",borderColor:editMode?"rgba(124,58,237,0.5)":"rgba(255,255,255,0.08)",background:editMode?"rgba(124,58,237,0.1)":"rgba(255,255,255,0.02)",color:editMode?"#c4b5fd":"#6b7280",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+              {editMode?"✓ Done — tap preview to confirm":"✥ Move & resize logo on preview"}
+            </button>
+            <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
+              <span style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:"0.08em",textTransform:"uppercase",flexShrink:0}}>Size</span>
+              <input type="range" min="5" max="95" value={logoScale} onChange={e=>{const v=Number(e.target.value);setLogoScale(v);posRef.current={...posRef.current,s:v}}}/>
+              <span style={{fontSize:9,color:C.muted,flexShrink:0,width:26,textAlign:"right"}}>{logoScale}%</span>
+              <button onClick={()=>{setLx(50);setLy(50);setLogoScale(55);posRef.current={x:50,y:50,s:55}}} style={{fontSize:9,background:"none",border:"none",color:C.purple,cursor:"pointer",fontWeight:700,flexShrink:0}}>Reset</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 02 Backgrounds */}
+      <div>
+        <SLabel n="02" title={`Backgrounds (${bgs.length})`} color="#8b5cf6"/>
+        <DZ id="fl-bg" accept="image/*" multi onFiles={async files=>{const ds=await Promise.all(files.filter(f=>f.type.startsWith("image/")).map(readFile));setBgs(p=>[...p,...ds]);setBlob(null)}} dragColor="rgba(139,92,246,0.7)">
+          <div style={{fontSize:18,opacity:0.25,marginBottom:3}}>⊞</div>
+          <div style={{fontSize:13,color:C.muted}}>Add background images</div>
+          <div style={{fontSize:10,color:C.subtle,marginTop:2}}>Each cuts every 250ms</div>
+        </DZ>
+        {bgs.length>0&&<div style={{marginTop:8,display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>{bgs.map((s,i)=><div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",aspectRatio:"1",border:curBg===i&&playing?"2px solid #7c3aed":"2px solid rgba(255,255,255,0.05)"}}><img src={s} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/><button onClick={()=>{setBgs(p=>p.filter((_,j)=>j!==i));setBlob(null)}} style={{position:"absolute",top:1,right:1,background:"rgba(0,0,0,0.8)",border:"none",color:"#fff",width:14,height:14,borderRadius:99,fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button></div>)}</div>}
+      </div>
+
+      {/* 03 Ratio */}
+      <div>
+        <SLabel n="03" title="Ratio" color="#a78bfa"/>
+        <div style={{display:"flex",gap:6}}>{RATIOS.map(r=><Pill key={r.key} active={ratio===r.key} onClick={()=>{setRatio(r.key);setBlob(null)}}>{r.label}</Pill>)}</div>
+      </div>
+
+      {/* 04 Loops */}
+      <div>
+        <SLabel n="04" title="Loops" color="#c4b5fd"/>
+        <div style={{display:"flex",gap:6}}>{[1,2,3].map(n=><Pill key={n} active={loops===n} color="#8b5cf6" onClick={()=>{setLoops(n);setBlob(null)}}>{n}× {n===1?"Once":n===2?"Twice":"3×"}</Pill>)}</div>
+        {bgs.length>0&&<p style={{fontSize:10,color:C.muted,marginTop:5,textAlign:"center"}}>≈ {dur}s total</p>}
+      </div>
+
+      {/* 05 Audio */}
+      <div>
+        <SLabel n="05" title="Audio" color={C.green} opt/>
+        {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>{setAudio(null);setBlob(null)}}/>
+          :<DZ id="fl-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration});setBlob(null)}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:13,color:C.muted}}>♪ Drop MP3 / WAV</div><div style={{fontSize:10,color:C.subtle,marginTop:1}}>Optional · plays over video</div></DZ>}
+      </div>
+
+      {/* Preview */}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+          <span style={{fontSize:11,fontWeight:700,color:editMode?"#a78bfa":C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>
+            {editMode?"✥ Drag · scroll/pinch to scale":`Preview · ${ratio.replace("x",":")} `}
+          </span>
+          {!editMode&&<PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)}/>}
+          {editMode&&<button onClick={()=>setEditMode(false)} style={{padding:"5px 12px",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer",background:"rgba(124,58,237,0.2)",border:"1px solid rgba(124,58,237,0.5)",color:"#c4b5fd"}}>✓ Done</button>}
+        </div>
+        <div ref={wrapRef} style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.6)":"rgba(255,255,255,0.07)"},0 16px 48px rgba(0,0,0,0.7)`,background:"#111118",width:pw,height:ph,flexShrink:0,alignSelf:"center",cursor:editMode?"move":"default",touchAction:editMode?"none":"auto",transition:"box-shadow 0.2s"}}>
+          <canvas ref={prevRef} width={R2.w} height={R2.h} style={{width:pw,height:ph,display:"block",userSelect:"none"}}/>
+          {(!logo&&bgs.length===0&&overlayMode==="logo")&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:26,opacity:0.1}}>⚡</div><p style={{fontSize:11,color:"#4b5563",margin:0,textAlign:"center",padding:"0 16px"}}>Upload logo + backgrounds to preview</p></div>}
+          {editMode&&<div style={{position:"absolute",bottom:8,left:0,right:0,display:"flex",justifyContent:"center",pointerEvents:"none"}}><div style={{background:"rgba(0,0,0,0.65)",backdropFilter:"blur(6px)",borderRadius:99,padding:"4px 12px",fontSize:10,color:"rgba(255,255,255,0.7)",fontWeight:600,letterSpacing:"0.03em"}}>drag · scroll or pinch to resize</div></div>}
+        </div>
+        {bgs.length>0&&!editMode&&<div style={{display:"flex",gap:3,flexWrap:"wrap",justifyContent:"center"}}>{bgs.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:curBg===i&&playing?"#7c3aed":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>}
+      </div>
+
+      <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+      {!canExp&&bgs.length>0&&<Hint>{overlayMode==="logo"?"Upload a logo":"Enter some text"} to export</Hint>}
+      {bgs.length===0&&<Hint>Add at least one background image</Hint>}
+    </div>
+  );
+}
+
+// ─── APP: PROOF ───────────────────────────────────────────────────────────────
+const PROOF_TMPLS=[{k:"dark",bg:"#0a0a0f",fg:"#f0f0f8",sub:"#9ca3af"},{k:"light",bg:"#f8f8fc",fg:"#111118",sub:"#6b7280"},{k:"brand",bg:"#0f172a",fg:"#e2e8f0",sub:"#94a3b8"}];
+
+function parseParts(text){
+  const parts=[];const re=/\*\*(.+?)\*\*/g;let last=0,m;
+  while((m=re.exec(text))!==null){if(m.index>last)parts.push({t:text.slice(last,m.index),h:false});parts.push({t:m[1],h:true});last=m.index+m[0].length}
+  if(last<text.length)parts.push({t:text.slice(last),h:false});
+  return parts.length?parts:[{t:text,h:false}];
+}
+
+function drawProof(canvas,items,frame,tmplKey,fontFam,fontColor){
+  const ctx=canvas.getContext("2d");const{width:W,height:H}=canvas;
+  const tm=PROOF_TMPLS.find(t=>t.k===tmplKey)||PROOF_TMPLS[0];
+  const fam=ff(fontFam||"Inter");
+  ctx.clearRect(0,0,W,H);ctx.fillStyle=tm.bg;ctx.fillRect(0,0,W,H);
+  if(!items.length)return;
+  const idx=Math.min(Math.floor(frame/SLIDE_FRAMES),items.length-1);
+  const sf=frame%SLIDE_FRAMES,pr=sf/SLIDE_FRAMES;
+  const fadeIn=Math.min(1,pr*6),fadeOut=pr>0.85?Math.max(0,1-(pr-0.85)/0.15):1;
+  const alpha=Math.min(fadeIn,fadeOut),slideY=(1-Math.min(1,pr*4))*28;
+  const item=items[idx];
+  ctx.globalAlpha=alpha;ctx.save();ctx.translate(0,slideY);
+  ctx.font=`bold ${Math.round(W*0.12)}px Georgia,serif`;ctx.fillStyle=fontColor||tm.fg;ctx.globalAlpha=alpha*0.07;ctx.fillText('"',W*0.08,H*0.24);ctx.globalAlpha=alpha;
+  const parts=parseParts(item.text);
+  const fs=Math.round(W*0.042),lh=fs*1.55,maxW=W*0.82;
+  let x=W*0.09,y=H*0.32;
+  const tokens=[];parts.forEach(p=>p.t.split(" ").forEach(w=>{if(w)tokens.push({w:w+" ",h:p.h})}));
+  let lineT=[],lineW=0;
+  const renderLine=(toks,ly)=>{let lx=x;toks.forEach(tok=>{ctx.font=`${tok.h?"800":"600"} ${fs}px ${fam}`;if(tok.h){ctx.fillStyle="#fbbf24";ctx.fillRect(lx-2,ly-fs*0.84,ctx.measureText(tok.w.trimEnd()).width+4,fs*1.08);ctx.fillStyle="#111"}else ctx.fillStyle=fontColor||tm.fg;ctx.fillText(tok.w,lx,ly);lx+=ctx.measureText(tok.w).width})};
+  tokens.forEach(tok=>{ctx.font=`${tok.h?"800":"600"} ${fs}px ${fam}`;const w=ctx.measureText(tok.w).width;if(lineW+w>maxW&&lineT.length){renderLine(lineT,y);y+=lh;lineT=[];lineW=0}lineT.push(tok);lineW+=w});
+  if(lineT.length)renderLine(lineT,y);y+=lh*1.5;
+  const stars=item.stars||5;ctx.font=`${Math.round(W*0.032)}px Arial`;ctx.fillStyle="#fbbf24";ctx.fillText("★".repeat(stars)+"☆".repeat(5-stars),x,y);y+=lh*1.2;
+  ctx.font=`700 ${Math.round(fs*0.85)}px ${fam}`;ctx.fillStyle=fontColor||tm.fg;ctx.fillText(`— ${item.author}`,x,y);
+  if(item.handle){ctx.font=`500 ${Math.round(fs*0.75)}px ${fam}`;ctx.fillStyle=tm.sub;ctx.fillText(item.handle,x,y+lh*0.9)}
+  const dr=Math.round(W*0.018),dotY=H*0.92,dw=items.length*dr*3;let dx=(W-dw)/2;
+  items.forEach((_,di)=>{ctx.beginPath();ctx.arc(dx+dr,dotY,di===idx?dr*1.2:dr*0.7,0,Math.PI*2);ctx.fillStyle=di===idx?"#0ea5e9":`${tm.fg}44`;ctx.fill();dx+=dr*3});
+  ctx.restore();ctx.globalAlpha=1;
+}
+
+const DEFAULT_REVIEWS=[
+  {text:"This product **completely changed** the way I work. Save **2 hours every day**.",author:"Sarah K.",handle:"@sarahk",stars:5},
+  {text:"**Best investment** I've made this year. Recommend to **everyone**.",author:"James T.",handle:"@jamest",stars:5},
+];
+
+function ProofApp(){
+  const[items,setItems]=useState(DEFAULT_REVIEWS);
+  const[tmpl,setTmpl]=useState("dark");
+  const[proofFont,setProofFont]=useState("Inter");
+  const[proofColor,setProofColor]=useState("#f0f0f8");
+  const[playing,setPlaying]=useState(false);
+  const[curFrame,setCurFrame]=useState(0);
+  const[editIdx,setEditIdx]=useState(null);
+  const[editBuf,setEditBuf]=useState({text:"",author:"",handle:"",stars:5});
+  const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
+  const total=items.length*SLIDE_FRAMES;
+  const renderFn=useCallback((canvas,f)=>drawProof(canvas,items,f,tmpl,proofFont,proofColor),[items,tmpl,proofFont,proofColor]);
+  const{run,download,prog,exporting,blob,setBlob}=useExport(renderFn,total,"proof.webm");
+  const drawPrev=useCallback(f=>{if(prevRef.current)drawProof(prevRef.current,items,f%Math.max(total,1),tmpl,proofFont,proofColor)},[items,tmpl,total,proofFont,proofColor]);
+  const runPrev=useCallback(()=>{const loop=ts=>{if(!startRef.current)startRef.current=ts;const f=Math.floor(((ts-startRef.current)/1000)*FPS);setCurFrame(f);drawPrev(f);animRef.current=requestAnimationFrame(loop)};animRef.current=requestAnimationFrame(loop)},[drawPrev]);
+  useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(0),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
+  useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[items,tmpl,proofFont,proofColor,drawPrev,playing]);
+  const save=()=>{if(editIdx===null)return;const n=[...items];n[editIdx]={...editBuf};setItems(n);setEditIdx(null);setBlob(null)};
+  const IS={width:"100%",padding:"8px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:12,outline:"none",marginTop:4};
+  const curSlide=Math.floor(curFrame/SLIDE_FRAMES);
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+      <div>
+        <SLabel n="01" title={`Testimonials (${items.length})`} color={C.blue}/>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {items.map((t,i)=>(
+            <div key={i} onClick={()=>{setEditIdx(i);setEditBuf({...t})}} style={{padding:"10px 12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.07)",background:"rgba(255,255,255,0.02)",cursor:"pointer",display:"flex",gap:8,alignItems:"flex-start"}}>
+              <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.text.replace(/\*\*/g,"")}</div><div style={{fontSize:9,color:C.muted,marginTop:2}}>{"★".repeat(t.stars||5)} · {t.author}</div></div>
+              <button onClick={e=>{e.stopPropagation();setItems(p=>p.filter((_,j)=>j!==i));setBlob(null)}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:12,flexShrink:0}}>✕</button>
+            </div>
+          ))}
+          <button onClick={()=>setItems(p=>[...p,{text:"**Amazing** — totally changed how I work.",author:"New Reviewer",handle:"@handle",stars:5}])} style={{padding:"10px",borderRadius:9,border:"1px dashed rgba(255,255,255,0.12)",background:"none",color:C.muted,cursor:"pointer",fontSize:12,fontWeight:600}}>+ Add testimonial</button>
+        </div>
+        <p style={{fontSize:10,color:C.muted,marginTop:6,lineHeight:1.5}}>Tap to edit. Wrap <strong style={{color:"#fbbf24"}}>**words**</strong> to highlight.</p>
+      </div>
+      <div><SLabel n="02" title="Style" color="#8b5cf6"/><div style={{display:"flex",gap:6}}>{PROOF_TMPLS.map(t=><Pill key={t.k} active={tmpl===t.k} onClick={()=>{setTmpl(t.k);setBlob(null);setTimeout(()=>drawPrev(0),60)}}>{t.k.charAt(0).toUpperCase()+t.k.slice(1)}</Pill>)}</div></div>
+      <div><SLabel n="03" title="Font & Colour" color="#a78bfa"/><FontColorPicker font={proofFont} setFont={f=>{setProofFont(f);setBlob(null)}} color={proofColor} setColor={c=>{setProofColor(c);setBlob(null)}} accent={C.blue}/></div>
+      {editIdx!==null&&(
+        <div style={{padding:"14px",borderRadius:12,border:"1px solid rgba(14,165,233,0.3)",background:"rgba(14,165,233,0.06)"}}>
+          <div style={{fontSize:11,fontWeight:800,color:C.blue,marginBottom:10,letterSpacing:"0.05em"}}>EDITING TESTIMONIAL</div>
+          <div style={{fontSize:10,color:C.muted}}>Review text — wrap **words** to highlight</div>
+          <textarea value={editBuf.text} onChange={e=>setEditBuf(b=>({...b,text:e.target.value}))} style={{...IS,minHeight:70,resize:"vertical"}}/>
+          <div style={{fontSize:10,color:C.muted,marginTop:7}}>Author</div><input value={editBuf.author} onChange={e=>setEditBuf(b=>({...b,author:e.target.value}))} style={IS}/>
+          <div style={{fontSize:10,color:C.muted,marginTop:5}}>Handle</div><input value={editBuf.handle} onChange={e=>setEditBuf(b=>({...b,handle:e.target.value}))} style={IS}/>
+          <div style={{display:"flex",justifyContent:"space-between",marginTop:7,marginBottom:3}}><span style={{fontSize:10,color:C.muted}}>Stars</span><span style={{fontSize:10,color:"#fbbf24"}}>{"★".repeat(editBuf.stars)}</span></div>
+          <input type="range" min="1" max="5" value={editBuf.stars} onChange={e=>setEditBuf(b=>({...b,stars:Number(e.target.value)}))} style={{accentColor:"#fbbf24"}}/>
+          <div style={{display:"flex",gap:6,marginTop:10}}>
+            <button onClick={save} style={{flex:1,padding:"9px",borderRadius:8,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",border:"none",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Save</button>
+            <button onClick={()=>setEditIdx(null)} style={{flex:1,padding:"9px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.muted,fontSize:12,cursor:"pointer"}}>Cancel</button>
+          </div>
+        </div>
+      )}
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>Preview</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.blue}/></div>
+        <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!items.length} emptyIcon="★" emptyText="Add testimonials to preview"/>
+        <div style={{display:"flex",gap:3,justifyContent:"center"}}>{items.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:curSlide===i&&playing?"#0ea5e9":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>
+      </div>
+      <ExportArea disabled={!items.length||exporting} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+      {!items.length&&<Hint>Add at least one testimonial</Hint>}
+    </div>
+  );
+}
+
+// ─── APP: HOOK ────────────────────────────────────────────────────────────────
+const HOOK_LIST=[
+  {id:"nobody",prefix:"Nobody talks about this…",style:"minimal"},
+  {id:"wish",  prefix:"I wish I knew this sooner…",style:"bold"},
+  {id:"easiest",prefix:"The easiest way to…",style:"impact"},
+  {id:"secret",prefix:"The secret nobody tells you…",style:"minimal"},
+  {id:"stop",  prefix:"Stop doing this if you…",style:"bold"},
+  {id:"why",   prefix:"This is why you're not…",style:"impact"},
+];
+const HOOK_STYLES={minimal:{bg:"#0a0a0f",fg:"#f0f0f8",acc:"#f59e0b"},bold:{bg:"#f59e0b",fg:"#0a0a0f",acc:"#0a0a0f"},impact:{bg:"#0f172a",fg:"#f8fafc",acc:"#f59e0b"}};
+
+function drawHook(canvas,hook,name,imgEl,frame,fontFam,fontColor){
+  const ctx=canvas.getContext("2d");const{width:W,height:H}=canvas;
+  const s=HOOK_STYLES[hook.style]||HOOK_STYLES.minimal;
+  const fam=ff(fontFam||"Inter");
+  const t=frame/HOOK_FRAMES,eased=easeOut(Math.min(1,t*3));
+  ctx.clearRect(0,0,W,H);ctx.fillStyle=s.bg;ctx.fillRect(0,0,W,H);
+  if(imgEl){const ih=H*0.48;const sc=Math.max(W/imgEl.width,ih/imgEl.height);const sw=imgEl.width*sc,sh=imgEl.height*sc;ctx.globalAlpha=Math.min(1,t*2);ctx.drawImage(imgEl,(W-sw)/2,0,sw,sh);const g=ctx.createLinearGradient(0,ih*0.4,0,ih);g.addColorStop(0,"transparent");g.addColorStop(1,s.bg);ctx.fillStyle=g;ctx.fillRect(0,0,W,ih);ctx.globalAlpha=1}
+  const py=imgEl?H*0.54:H*0.3,ps=Math.round(W*0.045);
+  ctx.font=`700 ${ps}px ${fam}`;ctx.fillStyle=s.acc;ctx.globalAlpha=eased;ctx.fillText(hook.prefix,W*0.08,py+(1-eased)*18);
+  const bs=Math.round(W*0.058),by=py+ps*2.2;
+  ctx.font=`900 ${bs}px ${fam}`;ctx.fillStyle=fontColor||s.fg;
+  const words=(name||"Your Product").split(" ");const maxW=W*0.84;let line="",ly=by;
+  words.forEach(w=>{const test=line?line+" "+w:w;if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line,W*0.08,ly+(1-eased)*28);ly+=bs*1.35;line=w}else line=test});
+  if(line)ctx.fillText(line,W*0.08,ly+(1-eased)*28);
+  ctx.globalAlpha=1;
+  const barA=Math.min(1,Math.max(0,(t-0.5)*4));
+  if(barA>0){ctx.globalAlpha=barA;ctx.fillStyle=s.acc;ctx.fillRect(0,H-H*0.1,W,H*0.1);ctx.font=`800 ${Math.round(W*0.045)}px ${fam}`;ctx.fillStyle=s.bg;ctx.textAlign="center";ctx.fillText("Shop Now →",W/2,H-H*0.1+H*0.065);ctx.textAlign="left";ctx.globalAlpha=1}
+}
+
+function HookApp(){
+  const[name,setName]=useState("");
+  const[img,setImg]=useState(null);
+  const[sel,setSel]=useState(new Set(["nobody","wish","easiest"]));
+  const[actH,setActH]=useState(0);
+  const[playing,setPlaying]=useState(false);
+  const[hookFont,setHookFont]=useState("Inter");
+  const[hookColor,setHookColor]=useState("#f0f0f8");
+  const imgRef=useRef(null);const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
+  const active=HOOK_LIST.filter(h=>sel.has(h.id));
+  const total=active.length*HOOK_FRAMES;
+  useEffect(()=>{if(!img){imgRef.current=null;return}loadImg(img).then(i=>imgRef.current=i)},[img]);
+  const drawPrev=useCallback(f=>{if(!prevRef.current||!active.length)return;const hi=Math.floor(f/HOOK_FRAMES)%active.length;setActH(hi);drawHook(prevRef.current,active[hi],name,imgRef.current,f%HOOK_FRAMES,hookFont,hookColor)},[active,name,hookFont,hookColor]);
+  const renderFn=useCallback((canvas,f)=>{if(!active.length)return;const hi=Math.floor(f/HOOK_FRAMES)%active.length;drawHook(canvas,active[hi],name,imgRef.current,f%HOOK_FRAMES,hookFont,hookColor)},[active,name,hookFont,hookColor]);
+  const{run,download,prog,exporting,blob,setBlob}=useExport(renderFn,total,"hook-ads.webm");
+  const runPrev=useCallback(()=>{const loop=ts=>{if(!startRef.current)startRef.current=ts;drawPrev(Math.floor(((ts-startRef.current)/1000)*FPS));animRef.current=requestAnimationFrame(loop)};animRef.current=requestAnimationFrame(loop)},[drawPrev]);
+  useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(0),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
+  useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[name,img,sel,hookFont,hookColor,drawPrev,playing]);
+  const toggle=id=>{setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n});setBlob(null)};
+  const canExp=active.length>0&&name.trim().length>0&&!exporting;
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+      <div>
+        <SLabel n="01" title="Product Image" color={C.amber} opt/>
+        <DZ id="hk-img" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setImg(d)}} dragColor="rgba(245,158,11,0.7)" compact>
+          {img?<div style={{display:"flex",alignItems:"center",gap:10}}><img src={img} style={{width:44,height:44,objectFit:"cover",borderRadius:6}} alt=""/><span style={{fontSize:12,color:C.muted}}>Tap to replace</span></div>:<><div style={{fontSize:16,opacity:0.25,marginBottom:3}}>📦</div><div style={{fontSize:13,color:C.muted}}>Drop product image</div></>}
+        </DZ>
+      </div>
+      <div><SLabel n="02" title="Product Name" color={C.amber}/><input value={name} onChange={e=>{setName(e.target.value);setBlob(null)}} placeholder="e.g. Cold Brew Concentrate" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none"}}/></div>
+      <div>
+        <SLabel n="03" title={`Hooks (${sel.size} selected)`} color="#fbbf24"/>
+        <p style={{fontSize:10,color:C.muted,marginBottom:7,lineHeight:1.5}}>Each selected hook becomes a separate ad variation.</p>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {HOOK_LIST.map(h=>(
+            <button key={h.id} onClick={()=>toggle(h.id)} style={{padding:"10px 12px",borderRadius:9,border:"1px solid",borderColor:sel.has(h.id)?"rgba(245,158,11,0.5)":"rgba(255,255,255,0.07)",background:sel.has(h.id)?"rgba(245,158,11,0.1)":"rgba(255,255,255,0.02)",color:sel.has(h.id)?"#fcd34d":C.muted,cursor:"pointer",textAlign:"left",fontSize:12,fontWeight:600,display:"flex",alignItems:"center",gap:8,transition:"all 0.14s"}}>
+              <span style={{opacity:sel.has(h.id)?1:0.3,fontSize:10,flexShrink:0}}>{sel.has(h.id)?"✓":"○"}</span>{h.prefix}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div><SLabel n="04" title="Font & Colour" color="#fbbf24"/><FontColorPicker font={hookFont} setFont={f=>{setHookFont(f);setBlob(null)}} color={hookColor} setColor={c=>{setHookColor(c);setBlob(null)}} accent={C.amber}/></div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>Hook {actH+1} / {active.length}</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.amber}/></div>
+        <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!active.length} emptyIcon="🎣" emptyText="Select hooks to preview"/>
+        <div style={{display:"flex",gap:3,justifyContent:"center"}}>{active.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:actH===i&&playing?"#f59e0b":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>
+      </div>
+      <ExportArea disabled={!canExp} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${active.length} Hook Ads .webm`}/>
+      {!name.trim()&&<Hint>Enter a product name to continue</Hint>}
+      {name.trim()&&sel.size===0&&<Hint>Select at least one hook</Hint>}
+    </div>
+  );
+}
+
+// ─── APP: REVEAL ──────────────────────────────────────────────────────────────
+const REVEAL_STYLES=[{id:"swipe",label:"Swipe",desc:"Left reveals right"},{id:"split",label:"Split",desc:"Centre out"},{id:"flash",label:"Flash",desc:"White flash cut"},{id:"zoom",label:"Zoom",desc:"Zoom through"}];
+
+function drawReveal(canvas,before,after,style,frame,fontFam,fontColor){
+  const ctx=canvas.getContext("2d");const{width:W,height:H}=canvas;
+  const fam=ff(fontFam||"Inter");
+  ctx.clearRect(0,0,W,H);
+  const dImg=(img,clip)=>{if(!img){ctx.fillStyle="#1a1a2e";ctx.fillRect(0,0,W,H);return}const s=Math.max(W/img.width,H/img.height);const sw=img.width*s,sh=img.height*s;if(clip){ctx.save();clip()}ctx.drawImage(img,(W-sw)/2,(H-sh)/2,sw,sh);if(clip)ctx.restore()};
+  const label=(text,col)=>{ctx.fillStyle="rgba(0,0,0,0.5)";ctx.fillRect(0,H-80,W,80);ctx.font=`700 ${Math.round(W*0.042)}px ${fam}`;ctx.fillStyle=fontColor||col;ctx.textAlign="center";ctx.fillText(text,W/2,H-38);ctx.textAlign="left"};
+  if(frame<REVEAL_HOLD){dImg(before);label("Before","#fff");return}
+  const tf=frame-REVEAL_HOLD,rawT=Math.min(1,tf/REVEAL_TRANS),t=easeMid(rawT);
+  if(style==="swipe"){dImg(after);ctx.save();ctx.beginPath();ctx.rect(0,0,W*(1-t),H);ctx.clip();dImg(before);ctx.restore();const lx=W*(1-t);ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx,H);ctx.strokeStyle="#fff";ctx.lineWidth=3;ctx.stroke();if(rawT<0.8){ctx.fillStyle="rgba(255,255,255,0.9)";ctx.font=`bold ${Math.round(W*0.06)}px Arial`;ctx.textAlign="center";ctx.fillText("→",lx+W*0.04,H/2);ctx.textAlign="left"}}
+  else if(style==="split"){dImg(after);const half=W*(1-t)/2;ctx.save();ctx.beginPath();ctx.rect(half,0,W-half*2,H);ctx.clip();dImg(before);ctx.restore();ctx.strokeStyle="#fff";ctx.lineWidth=2;[half,W-half].forEach(x=>{ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()})}
+  else if(style==="flash"){rawT<0.5?dImg(before):dImg(after);ctx.globalAlpha=Math.sin(rawT*Math.PI)*1.2;ctx.fillStyle="#fff";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1}
+  else if(style==="zoom"){dImg(before);if(rawT>0.1){const zt=easeMid(Math.max(0,(rawT-0.1)/0.9));ctx.save();ctx.globalAlpha=Math.min(1,zt*2);ctx.translate(W/2,H/2);ctx.scale(1+zt*0.4,1+zt*0.4);ctx.translate(-W/2,-H/2);dImg(after);ctx.restore()}}
+  if(t>0.7){ctx.globalAlpha=(t-0.7)/0.3;label("After","#10b981");ctx.globalAlpha=1}
+}
+
+function RevealApp(){
+  const[before,setBefore]=useState(null);const[after,setAfter]=useState(null);const[style,setStyle]=useState("swipe");const[playing,setPlaying]=useState(false);
+  const[revFont,setRevFont]=useState("Inter");const[revColor,setRevColor]=useState("#ffffff");
+  const bRef=useRef(null);const aRef=useRef(null);const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
+  useEffect(()=>{if(before)loadImg(before).then(i=>bRef.current=i)},[before]);
+  useEffect(()=>{if(after)loadImg(after).then(i=>aRef.current=i)},[after]);
+  const drawPrev=useCallback(f=>{if(prevRef.current)drawReveal(prevRef.current,bRef.current,aRef.current,style,f%REVEAL_FRAMES,revFont,revColor)},[style,revFont,revColor]);
+  const renderFn=useCallback((canvas,f)=>drawReveal(canvas,bRef.current,aRef.current,style,f,revFont,revColor),[style,revFont,revColor]);
+  const{run,download,prog,exporting,blob,setBlob}=useExport(renderFn,REVEAL_FRAMES,`reveal-${style}.webm`);
+  const runPrev=useCallback(()=>{const loop=ts=>{if(!startRef.current)startRef.current=ts;drawPrev(Math.floor(((ts-startRef.current)/1000)*FPS));animRef.current=requestAnimationFrame(loop)};animRef.current=requestAnimationFrame(loop)},[drawPrev]);
+  useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(0),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
+  useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[before,after,style,revFont,revColor,drawPrev,playing]);
+  const canExp=before&&after&&!exporting;
+  const ImgBox=({id,label,value,setter})=>(
+    <div style={{flex:1}}><div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,textAlign:"center"}}>{label}</div>
+      <DZ id={id} accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setter(d);setBlob(null)}} dragColor="rgba(16,185,129,0.6)" compact>
+        {value?<img src={value} style={{width:"100%",height:70,objectFit:"cover",borderRadius:7}} alt=""/>:<><div style={{fontSize:16,opacity:0.25}}>⊕</div><div style={{fontSize:11,color:C.muted,marginTop:2}}>Upload</div></>}
+      </DZ>
+    </div>
+  );
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+      <div><SLabel n="01" title="Before & After" color={C.emerald}/><div style={{display:"flex",gap:8,marginTop:0}}><ImgBox id="rv-b" label="Before" value={before} setter={setBefore}/><ImgBox id="rv-a" label="After" value={after} setter={setAfter}/></div></div>
+      <div>
+        <SLabel n="02" title="Reveal Style" color={C.emerald}/>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {REVEAL_STYLES.map(s=>(
+            <button key={s.id} onClick={()=>{setStyle(s.id);setBlob(null)}} style={{padding:"11px 13px",borderRadius:9,border:"1px solid",borderColor:style===s.id?"rgba(16,185,129,0.5)":"rgba(255,255,255,0.07)",background:style===s.id?"rgba(16,185,129,0.1)":"rgba(255,255,255,0.02)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.14s"}}>
+              <span style={{fontSize:13,fontWeight:700,color:style===s.id?"#6ee7b7":C.text}}>{s.label}</span><span style={{fontSize:10,color:C.muted}}>{s.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div><SLabel n="03" title="Font & Colour" color={C.emerald}/><FontColorPicker font={revFont} setFont={f=>{setRevFont(f);setBlob(null)}} color={revColor} setColor={c=>{setRevColor(c);setBlob(null)}} accent={C.emerald}/></div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>{REVEAL_STYLES.find(s=>s.id===style)?.label} · 3s</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.emerald}/></div>
+        <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!before||!after} emptyIcon="✦" emptyText="Upload before & after images"/>
+      </div>
+      <ExportArea disabled={!canExp} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${REVEAL_STYLES.find(s=>s.id===style)?.label} Reveal .webm`}/>
+      {!before&&<Hint>Upload a before image to start</Hint>}
+      {before&&!after&&<Hint>Upload an after image</Hint>}
+    </div>
+  );
+}
+
+// ─── APP: DROP ────────────────────────────────────────────────────────────────
+const DROP_AD_STYLES=[{id:"urgency",label:"Urgency",desc:"Red · Limited time"},{id:"clean",label:"Clean",desc:"White · Minimal"},{id:"bold",label:"Bold",desc:"Black · High impact"}];
+const DROP_PALETTES={urgency:{bg:"#0a0a0f",acc:"#ef4444",txt:"#f8f8fc"},clean:{bg:"#fafafa",acc:"#111118",txt:"#111118"},bold:{bg:"#111118",acc:"#fbbf24",txt:"#f8f8fc"}};
+
+function drawDrop(canvas,imgEl,orig,sale,headline,style,frame,fontFam,fontColor){
+  const ctx=canvas.getContext("2d");const{width:W,height:H}=canvas;
+  const fam=ff(fontFam||"Inter");
+  const t=frame/DROP_FRAMES,p=DROP_PALETTES[style]||DROP_PALETTES.urgency;
+  ctx.clearRect(0,0,W,H);ctx.fillStyle=p.bg;ctx.fillRect(0,0,W,H);
+  if(imgEl){const ih=H*0.5;const s=Math.max(W/imgEl.width,ih/imgEl.height);const sw=imgEl.width*s,sh=imgEl.height*s;ctx.drawImage(imgEl,(W-sw)/2,0,sw,sh);const g=ctx.createLinearGradient(0,ih*0.4,0,ih);g.addColorStop(0,"transparent");g.addColorStop(1,p.bg);ctx.fillStyle=g;ctx.fillRect(0,0,W,ih+10)}
+  const ts_=imgEl?H*0.52:H*0.2,px=W*0.08;let y=ts_;
+  const eased=easeOut(Math.min(1,t*4));
+  if(headline){ctx.font=`700 ${Math.round(W*0.042)}px ${fam}`;ctx.fillStyle=fontColor||p.txt;ctx.globalAlpha=eased;ctx.fillText(headline,px,y+(1-eased)*18);ctx.globalAlpha=1;y+=Math.round(W*0.042)*1.8}
+  const disc=orig&&sale?Math.round((1-Number(sale)/Number(orig))*100):null;
+  if(disc&&disc>0){const badgeA=easeOut(Math.min(1,Math.max(0,(t-0.1)*5)));ctx.globalAlpha=badgeA;const bh=Math.round(H*0.065),bw=Math.round(W*0.38);ctx.fillStyle=p.acc;ctx.beginPath();ctx.roundRect(px,y,bw,bh,bh/2);ctx.fill();ctx.font=`900 ${Math.round(bh*0.55)}px ${fam}`;ctx.fillStyle=style==="bold"?p.bg:"#fff";ctx.textAlign="center";ctx.fillText(`${disc}% OFF`,px+bw/2,y+bh*0.69);ctx.textAlign="left";ctx.globalAlpha=1;y+=bh+H*0.04}
+  const priceA=easeOut(Math.min(1,Math.max(0,(t-0.2)*4)));ctx.globalAlpha=priceA;
+  if(orig){const os=Math.round(W*0.052);ctx.font=`500 ${os}px ${fam}`;ctx.fillStyle=fontColor||p.txt;ctx.globalAlpha=priceA*0.35;ctx.fillText(`$${orig}`,px,y);const ow=ctx.measureText(`$${orig}`).width;ctx.strokeStyle=fontColor||p.txt;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px,y-os*0.3);ctx.lineTo(px+ow,y-os*0.3);ctx.stroke();ctx.globalAlpha=1;y+=os*1.6}
+  if(sale){const ss=Math.round(W*0.13);const bp=bounceOut(Math.min(1,Math.max(0,(t-0.25)/0.4)));ctx.globalAlpha=Math.min(1,bp*3);ctx.save();ctx.translate(px,y);ctx.scale(0.7+0.3*bp,0.7+0.3*bp);ctx.font=`900 ${ss}px ${fam}`;ctx.fillStyle=p.acc;ctx.fillText(`$${sale}`,0,0);ctx.restore();ctx.globalAlpha=1;y+=ss*1.3}
+  const stripA=easeOut(Math.min(1,Math.max(0,(t-0.6)*5)));
+  if(stripA>0){ctx.globalAlpha=stripA;const sy=H*0.86,sh2=H*0.09;ctx.fillStyle=p.acc;ctx.fillRect(0,sy,W,sh2);ctx.font=`900 ${Math.round(sh2*0.42)}px ${fam}`;ctx.fillStyle=style==="bold"?p.bg:"#fff";ctx.textAlign="center";ctx.fillText(style==="urgency"?"⚡ LIMITED TIME OFFER":style==="bold"?"SHOP NOW →":"ORDER TODAY",W/2,sy+sh2*0.65);ctx.textAlign="left";ctx.globalAlpha=1}
+}
+
+function DropApp(){
+  const[img,setImg]=useState(null);const[orig,setOrig]=useState("99");const[sale,setSale]=useState("49");const[headline,setHeadline]=useState("Limited Time Deal");const[style,setStyle]=useState("urgency");const[playing,setPlaying]=useState(false);
+  const[dropFont,setDropFont]=useState("Inter");const[dropColor,setDropColor]=useState("#f8f8fc");
+  const imgRef=useRef(null);const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
+  useEffect(()=>{if(!img){imgRef.current=null;return}loadImg(img).then(i=>imgRef.current=i)},[img]);
+  const SF=Math.round(DROP_FRAMES*0.7);
+  const drawPrev=useCallback(f=>{if(prevRef.current)drawDrop(prevRef.current,imgRef.current,orig,sale,headline,style,f%DROP_FRAMES,dropFont,dropColor)},[orig,sale,headline,style,dropFont,dropColor]);
+  const renderFn=useCallback((canvas,f)=>drawDrop(canvas,imgRef.current,orig,sale,headline,style,f,dropFont,dropColor),[orig,sale,headline,style,dropFont,dropColor]);
+  const{run,download,prog,exporting,blob,setBlob}=useExport(renderFn,DROP_FRAMES,`drop-${style}.webm`);
+  const runPrev=useCallback(()=>{const loop=ts=>{if(!startRef.current)startRef.current=ts;drawPrev(Math.floor(((ts-startRef.current)/1000)*FPS));animRef.current=requestAnimationFrame(loop)};animRef.current=requestAnimationFrame(loop)},[drawPrev]);
+  useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(SF),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
+  useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(SF),60)},[img,orig,sale,headline,style,dropFont,dropColor,drawPrev,playing]);
+  const disc=orig&&sale?Math.round((1-Number(sale)/Number(orig))*100):null;
+  const IS={width:"100%",padding:"9px 11px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none",marginTop:5};
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+      <div>
+        <SLabel n="01" title="Product Image" color={C.red} opt/>
+        <DZ id="dp-img" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setImg(d);setBlob(null)}} dragColor="rgba(239,68,68,0.7)" compact>
+          {img?<img src={img} style={{width:"100%",height:80,objectFit:"cover",borderRadius:7}} alt=""/>:<><div style={{fontSize:16,opacity:0.25,marginBottom:2}}>📦</div><div style={{fontSize:13,color:C.muted}}>Drop product image</div></>}
+        </DZ>
+      </div>
+      <div>
+        <SLabel n="02" title={`Pricing${disc&&disc>0?` · ${disc}% off`:""}`} color={C.red}/>
+        <div style={{display:"flex",gap:8}}>
+          <div style={{flex:1}}><div style={{fontSize:9,color:C.muted,fontWeight:600,letterSpacing:"0.07em",textTransform:"uppercase"}}>Original $</div><input type="number" value={orig} onChange={e=>{setOrig(e.target.value);setBlob(null)}} style={IS} placeholder="99"/></div>
+          <div style={{flex:1}}><div style={{fontSize:9,color:C.red,fontWeight:600,letterSpacing:"0.07em",textTransform:"uppercase"}}>Sale $</div><input type="number" value={sale} onChange={e=>{setSale(e.target.value);setBlob(null)}} style={{...IS,borderColor:"rgba(239,68,68,0.3)"}} placeholder="49"/></div>
+        </div>
+        {disc&&disc>0&&<div style={{marginTop:7,padding:"7px 12px",borderRadius:8,background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.25)",fontSize:12,fontWeight:800,color:"#f87171",textAlign:"center"}}>{disc}% off · Save ${(Number(orig)-Number(sale)).toFixed(0)}</div>}
+      </div>
+      <div><SLabel n="03" title="Headline" color="#fbbf24" opt/><input value={headline} onChange={e=>{setHeadline(e.target.value);setBlob(null)}} placeholder="e.g. Limited Time Deal" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none"}}/></div>
+      <div>
+        <SLabel n="04" title="Ad Style" color="#f97316"/>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {DROP_AD_STYLES.map(s=>(
+            <button key={s.id} onClick={()=>{setStyle(s.id);setBlob(null)}} style={{padding:"10px 12px",borderRadius:9,border:"1px solid",borderColor:style===s.id?"rgba(239,68,68,0.5)":"rgba(255,255,255,0.07)",background:style===s.id?"rgba(239,68,68,0.1)":"rgba(255,255,255,0.02)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.14s"}}>
+              <span style={{fontSize:13,fontWeight:700,color:style===s.id?"#fca5a5":C.text}}>{s.label}</span><span style={{fontSize:10,color:C.muted}}>{s.desc}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div><SLabel n="05" title="Font & Colour" color="#f97316"/><FontColorPicker font={dropFont} setFont={f=>{setDropFont(f);setBlob(null)}} color={dropColor} setColor={c=>{setDropColor(c);setBlob(null)}} accent={C.red}/></div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>{DROP_AD_STYLES.find(s=>s.id===style)?.label} · 5s</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.red}/></div>
+        <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!sale} emptyIcon="🔥" emptyText="Enter a sale price to preview"/>
+      </div>
+      <ExportArea disabled={!sale||exporting} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${DROP_AD_STYLES.find(s=>s.id===style)?.label} Drop .webm`}/>
+      {!sale&&<Hint>Enter a sale price to continue</Hint>}
+    </div>
+  );
+}
+
+// ─── HOME DEMO CANVASES ───────────────────────────────────────────────────────
+function drawFlickDemo(canvas,t){
+  const ctx=canvas.getContext("2d");const W=canvas.width,H=canvas.height;
+  const COLORS=["#1a0533","#0a1a3a","#0a2a1a","#2a0a0a","#1a1a0a","#0a0a2a"];
+  const idx=Math.floor(t/250)%COLORS.length;
+  ctx.fillStyle=COLORS[idx];ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=0.22;ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+  const lw=W*0.55,lh=H*0.14;const lx=(W-lw)/2,ly=(H-lh)/2;
+  ctx.fillStyle="rgba(255,255,255,0.92)";ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,lh*0.25);ctx.fill();
+  ctx.fillStyle="#111";ctx.font=`900 ${Math.round(lh*0.46)}px Inter,system-ui,sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("YOUR LOGO",W/2,H/2);ctx.textAlign="left";ctx.textBaseline="alphabetic";
+}
+
+function drawProofDemo(canvas,elapsed){
+  const ctx=canvas.getContext("2d");const W=canvas.width,H=canvas.height;
+  const CYCLE=3000;const t=(elapsed%CYCLE)/CYCLE;
+  const reviews=[{q:"This **completely changed** how I work.",a:"Sarah K.",stars:5},{q:"**Best investment** I've made this year.",a:"James T.",stars:5},{q:"Would recommend to **everyone**.",a:"Alex R.",stars:5}];
+  const ri=Math.floor(elapsed/CYCLE)%reviews.length;const rev=reviews[ri];
+  const fadeIn=Math.min(1,t*5),fadeOut=t>0.8?Math.max(0,1-(t-0.8)/0.2):1;const alpha=Math.min(fadeIn,fadeOut);
+  ctx.fillStyle="#0a0a0f";ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=0.06;ctx.fillStyle="#fff";ctx.font=`900 ${Math.round(W*0.28)}px Georgia,serif`;ctx.textAlign="center";ctx.fillText('"',W/2,H*0.38);ctx.textAlign="left";ctx.globalAlpha=alpha;
+  const words=rev.q.split(" ");const fs=Math.round(W*0.065);const lh=fs*1.5;
+  ctx.textBaseline="top";const renderLine=(txt,ly)=>{let lx=W*0.1;txt.split(" ").forEach(w=>{const clean=w.replace(/\*\*/g,"");const isH=rev.q.indexOf(`**${clean}**`)>-1;const ww=ctx.measureText(clean+" ").width;if(isH){ctx.fillStyle="#fbbf24";ctx.fillRect(lx-2,ly-2,ww+2,fs+4);ctx.fillStyle="#111"}else ctx.fillStyle="rgba(240,240,248,0.95)";ctx.fillText(clean+" ",lx,ly);lx+=ww})};
+  ctx.font=`700 ${fs}px Inter,system-ui,sans-serif`;let lines=[],cur="";words.forEach(w=>{const clean=w.replace(/\*\*/g,"");const t2=cur?cur+" "+clean:clean;if(ctx.measureText(t2).width>W*0.8&&cur){lines.push(cur);cur=clean}else cur=t2});if(cur)lines.push(cur);
+  lines.forEach((l,i)=>renderLine(l,H*0.32+i*lh));let y=H*0.32+lines.length*lh+lh*0.8;
+  ctx.fillStyle="#fbbf24";ctx.font=`${Math.round(W*0.06)}px Arial`;ctx.fillText("★★★★★",W*0.1,y);y+=lh;
+  ctx.fillStyle="rgba(200,200,220,0.9)";ctx.font=`600 ${Math.round(W*0.055)}px Inter,system-ui,sans-serif`;ctx.fillText(`— ${rev.a}`,W*0.1,y);
+  ctx.textBaseline="alphabetic";ctx.globalAlpha=1;
+}
+
+function drawHookDemo(canvas,elapsed){
+  const ctx=canvas.getContext("2d");const W=canvas.width,H=canvas.height;
+  const CYCLE=2800;const t=(elapsed%CYCLE)/CYCLE;
+  const hooks=["Nobody talks\nabout this…","I wish I knew\nthis sooner…","The easiest way\nto grow…"];
+  const hi=Math.floor(elapsed/CYCLE)%hooks.length;const eased=Math.min(1,t*4);
+  ctx.fillStyle="#0f172a";ctx.fillRect(0,0,W,H);
+  ctx.globalAlpha=0.4;ctx.fillStyle="#334155";const bw=W*0.35,bh=H*0.22,bx=(W-bw)/2,by=H*0.15;ctx.beginPath();ctx.roundRect(bx,by,bw,bh,8);ctx.fill();
+  ctx.globalAlpha=0.7;ctx.font=`${Math.round(W*0.1)}px Arial`;ctx.textAlign="center";ctx.fillText("📦",W/2,by+bh*0.72);ctx.textAlign="left";ctx.globalAlpha=1;
+  const fs=Math.round(W*0.078);ctx.globalAlpha=eased;ctx.fillStyle="#f59e0b";ctx.font=`700 ${fs}px Inter,system-ui,sans-serif`;
+  hooks[hi].split("\n").forEach((l,i)=>ctx.fillText(l,W*0.08,H*0.62+i*fs*1.4+(1-eased)*20));
+  if(t>0.55){const barA=Math.min(1,(t-0.55)*4);ctx.globalAlpha=barA;ctx.fillStyle="#f59e0b";ctx.fillRect(0,H*0.88,W,H*0.12);ctx.fillStyle="#0f172a";ctx.font=`800 ${Math.round(W*0.065)}px Inter,system-ui,sans-serif`;ctx.textAlign="center";ctx.fillText("Shop Now →",W/2,H*0.88+H*0.075);ctx.textAlign="left"}
+  ctx.globalAlpha=1;
+}
+
+function drawRevealDemo(canvas,elapsed){
+  const ctx=canvas.getContext("2d");const W=canvas.width,H=canvas.height;
+  const CYCLE=3200;const t=(elapsed%CYCLE)/CYCLE;const HOLD=0.25;
+  const drawBefore=()=>{ctx.fillStyle="#1a1a2a";ctx.fillRect(0,0,W,H);const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.6);g.addColorStop(0,"#2d2d44");g.addColorStop(1,"#0a0a14");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.globalAlpha=0.3;ctx.fillStyle="#4a4a6a";ctx.beginPath();ctx.arc(W/2,H*0.42,W*0.28,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1};
+  const drawAfter=()=>{ctx.fillStyle="#0a1a0a";ctx.fillRect(0,0,W,H);const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.6);g.addColorStop(0,"#1a4a1a");g.addColorStop(1,"#050f05");ctx.fillStyle=g;ctx.fillRect(0,0,W,H);ctx.globalAlpha=0.5;ctx.fillStyle="#22c55e";ctx.beginPath();ctx.arc(W/2,H*0.42,W*0.28,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1};
+  const label=(txt,col)=>{ctx.fillStyle="rgba(0,0,0,0.5)";ctx.fillRect(0,H-H*0.12,W,H*0.12);ctx.fillStyle=col;ctx.font=`700 ${Math.round(W*0.08)}px Inter,system-ui,sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText(txt,W/2,H-H*0.06);ctx.textAlign="left";ctx.textBaseline="alphabetic"};
+  if(t<HOLD){drawBefore();label("Before","rgba(255,255,255,0.9)");return}
+  const raw=Math.min(1,(t-HOLD)/(1-HOLD*2));const ease=raw<0.5?4*raw*raw*raw:1-Math.pow(-2*raw+2,3)/2;
+  drawAfter();ctx.save();ctx.beginPath();ctx.rect(0,0,W*(1-ease),H);ctx.clip();drawBefore();ctx.restore();
+  const lx=W*(1-ease);ctx.beginPath();ctx.moveTo(lx,0);ctx.lineTo(lx,H);ctx.strokeStyle="rgba(255,255,255,0.9)";ctx.lineWidth=Math.max(2,W*0.006);ctx.stroke();
+  if(ease>0.7){ctx.globalAlpha=(ease-0.7)/0.3;label("After","#10b981");ctx.globalAlpha=1}
+}
+
+function drawDropDemo(canvas,elapsed){
+  const ctx=canvas.getContext("2d");const W=canvas.width,H=canvas.height;
+  const CYCLE=4000;const t=(elapsed%CYCLE)/CYCLE;
+  ctx.fillStyle="#0a0a0f";ctx.fillRect(0,0,W,H);
+  const g=ctx.createLinearGradient(0,0,0,H*0.5);g.addColorStop(0,"#1a0a0a");g.addColorStop(1,"#0a0a0f");ctx.fillStyle=g;ctx.fillRect(0,0,W,H*0.5);
+  ctx.globalAlpha=0.5;ctx.font=`${Math.round(W*0.14)}px Arial`;ctx.textAlign="center";ctx.fillText("🔥",W/2,H*0.3);ctx.textAlign="left";ctx.globalAlpha=1;
+  const px=W*0.1;let y=H*0.5;
+  const ea=easeOut(Math.min(1,t*5));ctx.globalAlpha=ea;ctx.fillStyle="rgba(240,240,248,0.9)";ctx.font=`700 ${Math.round(W*0.065)}px Inter,system-ui,sans-serif`;ctx.fillText("Limited Time Deal",px,y+(1-ea)*16);y+=Math.round(W*0.065)*1.9;
+  if(t>0.15){const bA=easeOut(Math.min(1,(t-0.15)*5));ctx.globalAlpha=bA;const bh=Math.round(H*0.07),bw=W*0.55;ctx.fillStyle="#ef4444";ctx.beginPath();ctx.roundRect(px,y,bw,bh,bh/2);ctx.fill();ctx.fillStyle="#fff";ctx.font=`900 ${Math.round(bh*0.52)}px Inter,system-ui,sans-serif`;ctx.textAlign="center";ctx.fillText("50% OFF",px+bw/2,y+bh*0.68);ctx.textAlign="left";ctx.globalAlpha=1;y+=bh+H*0.04}
+  if(t>0.25){const pA=easeOut(Math.min(1,(t-0.25)*4));ctx.globalAlpha=pA*0.35;const os=Math.round(W*0.07);ctx.fillStyle="#f8f8fc";ctx.font=`500 ${os}px Inter,system-ui,sans-serif`;ctx.fillText("$99",px,y);const ow=ctx.measureText("$99").width;ctx.strokeStyle="#f8f8fc";ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(px,y-os*0.3);ctx.lineTo(px+ow,y-os*0.3);ctx.stroke();ctx.globalAlpha=1;y+=os*1.7}
+  if(t>0.32){const bp=bounceOut(Math.min(1,(t-0.32)/0.35));const ss=Math.round(W*0.18);ctx.globalAlpha=Math.min(1,bp*2);ctx.save();ctx.translate(px,y);ctx.scale(0.5+0.5*bp,0.5+0.5*bp);ctx.fillStyle="#ef4444";ctx.font=`900 ${ss}px Inter,system-ui,sans-serif`;ctx.fillText("$49",0,0);ctx.restore();ctx.globalAlpha=1}
+  if(t>0.65){const sA=easeOut(Math.min(1,(t-0.65)*4));ctx.globalAlpha=sA;const sy=H*0.87;ctx.fillStyle="#ef4444";ctx.fillRect(0,sy,W,H-sy);ctx.fillStyle="#fff";ctx.font=`800 ${Math.round((H-sy)*0.38)}px Inter,system-ui,sans-serif`;ctx.textAlign="center";ctx.fillText("⚡ LIMITED TIME",W/2,sy+(H-sy)*0.65);ctx.textAlign="left";ctx.globalAlpha=1}
+}
+
+function DemoCanvas({drawFn}){
+  const canvasRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
+  useEffect(()=>{
+    const canvas=canvasRef.current;if(!canvas)return;
+    const loop=ts=>{if(!startRef.current)startRef.current=ts;drawFn(canvas,ts-startRef.current);animRef.current=requestAnimationFrame(loop)};
+    animRef.current=requestAnimationFrame(loop);
+    return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)};
+  },[drawFn]);
+  return <canvas ref={canvasRef} width={270} height={480} style={{width:"100%",height:"100%",display:"block",borderRadius:"inherit"}}/>;
+}
+
+const DEMO_FN={flick:drawFlickDemo,proof:drawProofDemo,hook:drawHookDemo,reveal:drawRevealDemo,drop:drawDropDemo};
+
+// ─── HOME PAGE ────────────────────────────────────────────────────────────────
+const DESCS={
+  flick:"Logo-focused brand awareness ads. Fast-cut backgrounds.",
+  proof:"Turn reviews into animated social proof ads.",
+  hook:"Generate high-performing ad hooks — 6 proven patterns.",
+  reveal:"Before-and-after ads. Swipe, split, flash, or zoom.",
+  drop:"Promotion & sale ads with price animations.",
+};
+
+function HomePage({onSelect}){
+  const[hov,setHov]=useState(null);
+  return(
+    <div style={{minHeight:"100%",display:"flex",flexDirection:"column",alignItems:"center",padding:"32px 16px 60px",background:C.bg}}>
+      <div style={{width:"100%",maxWidth:560}}>
+        <div style={{textAlign:"center",marginBottom:32}}>
+          <div style={{width:48,height:48,borderRadius:13,background:"linear-gradient(135deg,#7c3aed,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,margin:"0 auto 16px",boxShadow:"0 0 28px rgba(124,58,237,0.4)"}}>⚡</div>
+          <h1 style={{fontSize:"clamp(30px,7vw,50px)",fontWeight:900,letterSpacing:"-1.5px",lineHeight:1.06,marginBottom:10}}>
+            Make Ads<br/><span style={{background:"linear-gradient(90deg,#7c3aed,#ec4899 55%,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>in Seconds</span>
+          </h1>
+          <p style={{fontSize:14,color:C.muted,lineHeight:1.6,maxWidth:340,margin:"0 auto"}}>Five purpose-built tools. No timelines. No bloat.</p>
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:10}}>
+          {APPS.map(app=>(
+            <button key={app.id} onClick={()=>onSelect(app.id)}
+              onMouseEnter={()=>setHov(app.id)} onMouseLeave={()=>setHov(null)}
+              style={{width:"100%",borderRadius:16,border:`1px solid ${hov===app.id?app.color+"66":C.border}`,padding:0,background:C.card,cursor:"pointer",textAlign:"left",overflow:"hidden",transition:"all 0.2s",boxShadow:hov===app.id?`0 8px 36px ${app.color}22`:"0 2px 8px rgba(0,0,0,0.3)",transform:hov===app.id?"translateY(-3px)":"none"}}>
+              <div style={{display:"flex",alignItems:"stretch",minHeight:110}}>
+                <div style={{width:72,flexShrink:0,borderRight:`1px solid ${C.border}`,overflow:"hidden",position:"relative"}}>
+                  <DemoCanvas drawFn={DEMO_FN[app.id]}/>
+                  <div style={{position:"absolute",top:5,left:4,background:"rgba(0,0,0,0.7)",borderRadius:4,padding:"1px 5px",fontSize:7,fontWeight:800,color:"rgba(255,255,255,0.5)",letterSpacing:"0.08em"}}>LIVE</div>
+                </div>
+                <div style={{flex:1,padding:"14px 16px",display:"flex",flexDirection:"column",justifyContent:"center",gap:4}}>
+                  <div style={{display:"flex",alignItems:"center",gap:8}}>
+                    <span style={{fontSize:15}}>{app.icon}</span>
+                    <span style={{fontSize:16,fontWeight:900,letterSpacing:"-0.3px",color:hov===app.id?app.color:C.text,transition:"color 0.15s"}}>{app.name}</span>
+                    <span style={{fontSize:8,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:app.color,background:app.color+"18",padding:"2px 6px",borderRadius:4}}>{app.tag}</span>
+                  </div>
+                  <p style={{fontSize:12,color:C.muted,lineHeight:1.5,margin:0}}>{DESCS[app.id]}</p>
+                </div>
+                <div style={{display:"flex",alignItems:"center",padding:"0 14px",color:hov===app.id?app.color:"rgba(255,255,255,0.15)",fontSize:14,transition:"all 0.15s",transform:hov===app.id?"translateX(2px)":"none"}}>→</div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ROOT ─────────────────────────────────────────────────────────────────────
+function Root(){
+  const[activeApp,setActiveApp]=useState(null);
+  const activeAppMeta=APPS.find(a=>a.id===activeApp);
+  return(
+    <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column"}}>
+      <header style={{position:"sticky",top:0,zIndex:100,height:52,display:"flex",alignItems:"center",padding:"0 16px",gap:10,background:"rgba(9,9,16,0.95)",backdropFilter:"blur(16px)",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+        <button onClick={()=>setActiveApp(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0}}>
+          <div style={{width:28,height:28,borderRadius:7,background:"linear-gradient(135deg,#7c3aed,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,boxShadow:"0 0 12px rgba(124,58,237,0.35)"}}>⚡</div>
+          <span style={{fontWeight:900,fontSize:15,letterSpacing:"-0.4px",color:C.text}}>Flick</span>
+          <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",background:"rgba(124,58,237,0.14)",color:"#c4b5fd",padding:"2px 7px",borderRadius:99,border:"1px solid rgba(124,58,237,0.22)",textTransform:"uppercase"}}>Suite</span>
+        </button>
+        {activeApp&&(
+          <>
+            <span style={{color:"rgba(255,255,255,0.2)",fontSize:13}}>/</span>
+            <div style={{display:"flex",alignItems:"center",gap:6}}>
+              <span style={{fontSize:13,color:activeAppMeta?.color}}>{activeAppMeta?.icon}</span>
+              <span style={{fontSize:14,fontWeight:800,color:C.text}}>{activeAppMeta?.name}</span>
+              <span style={{fontSize:9,fontWeight:700,color:activeAppMeta?.color,opacity:0.7,textTransform:"uppercase",letterSpacing:"0.08em"}}>{activeAppMeta?.tag}</span>
+            </div>
+            <div style={{flex:1}}/>
+            <button onClick={()=>setActiveApp(null)} style={{fontSize:11,color:C.muted,background:"none",border:"none",cursor:"pointer",fontWeight:500}}>← Home</button>
+          </>
+        )}
+        {!activeApp&&<div style={{flex:1}}/>}
+      </header>
+      {activeApp&&(
+        <div style={{display:"flex",gap:0,borderBottom:`1px solid ${C.border}`,background:"rgba(255,255,255,0.01)",overflowX:"auto",flexShrink:0}}>
+          {APPS.map(app=>(
+            <button key={app.id} onClick={()=>setActiveApp(app.id)} style={{padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",background:"none",border:"none",borderBottom:activeApp===app.id?`2px solid ${app.color}`:"2px solid transparent",color:activeApp===app.id?app.color:C.muted,transition:"all 0.14s",whiteSpace:"nowrap",flexShrink:0}}>{app.icon} {app.name}</button>
+          ))}
+        </div>
+      )}
+      <div style={{flex:1,overflowY:"auto"}}>
+        {!activeApp?<HomePage onSelect={setActiveApp}/>:(
+          <div style={{maxWidth:540,margin:"0 auto",padding:"24px 16px 60px"}}>
+            {activeApp==="flick"&&<FlickApp/>}
+            {activeApp==="proof"&&<ProofApp/>}
+            {activeApp==="hook"&&<HookApp/>}
+            {activeApp==="reveal"&&<RevealApp/>}
+            {activeApp==="drop"&&<DropApp/>}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<Root/>);
+</script>
+</body>
+</html>
