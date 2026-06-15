@@ -378,95 +378,158 @@ function FlickApp(){
   const pw=Math.min(window.innerWidth-32,280);
   const ph=Math.round(pw*R2.h/R2.w);
 
-  return(
-    <div style={{display:"flex",flexDirection:"column",gap:20}}>
-      {/* 01 Content */}
-      <div>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-          <label style={{fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:C.purple}}>01 Content</label>
-          <div style={{display:"flex",gap:4}}>
+  // Shared card style for settings groups
+  const card={background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"};
+  const secTitle={fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:12,display:"flex",alignItems:"center",gap:6};
+  const isDesktop=window.innerWidth>=900;
+
+  // Preview panel — shared between layouts
+  const previewPanel=(
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      {/* Preview header */}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
+        <span style={{fontSize:12,fontWeight:700,color:editMode?"#c4b5fd":"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>
+          {editMode?"✥ Drag to move · scroll to scale":`Preview · ${ratio.replace("x",":")} `}
+        </span>
+        <div style={{display:"flex",gap:6}}>
+          {!editMode&&<PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)}/>}
+          {editMode&&<button onClick={()=>setEditMode(false)} style={{padding:"5px 14px",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer",background:"rgba(124,58,237,0.2)",border:"1px solid rgba(124,58,237,0.5)",color:"#c4b5fd"}}>✓ Done</button>}
+        </div>
+      </div>
+      {/* Canvas */}
+      <div ref={wrapRef} style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.7)":"rgba(255,255,255,0.08)"},0 20px 60px rgba(0,0,0,0.8)`,background:"#0d0d15",width:pw,height:ph,flexShrink:0,alignSelf:"center",cursor:editMode?"move":"default",touchAction:editMode?"none":"auto",transition:"box-shadow 0.2s",maxWidth:"100%"}}>
+        <canvas ref={prevRef} width={R2.w} height={R2.h} style={{width:pw,height:ph,display:"block",userSelect:"none",maxWidth:"100%"}}/>
+        {(!logo&&bgs.length===0&&overlayMode==="logo")&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,background:"rgba(9,9,16,0.94)"}}><div style={{fontSize:36,opacity:0.08}}>⚡</div><p style={{fontSize:12,color:"#4b5563",margin:0,textAlign:"center",padding:"0 20px",lineHeight:1.6}}>Upload a logo and add background images to preview</p></div>}
+        {editMode&&<div style={{position:"absolute",bottom:10,left:0,right:0,display:"flex",justifyContent:"center",pointerEvents:"none"}}><div style={{background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",borderRadius:99,padding:"5px 14px",fontSize:10,color:"rgba(255,255,255,0.75)",fontWeight:600,letterSpacing:"0.03em"}}>drag to move · scroll or pinch to resize</div></div>}
+      </div>
+      {/* Scene dots */}
+      {bgs.length>0&&!editMode&&<div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center"}}>{bgs.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:curBg===i&&playing?"#7c3aed":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>}
+      {/* Export — shown below preview on desktop */}
+      {isDesktop&&<div style={{marginTop:4}}>
+        <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+        {!canExp&&bgs.length>0&&<Hint>{overlayMode==="logo"?"Upload a logo":"Enter some text"} to export</Hint>}
+        {bgs.length===0&&<Hint>Add background images to export</Hint>}
+      </div>}
+    </div>
+  );
+
+  // Settings panel
+  const settingsPanel=(
+    <div style={{display:"flex",flexDirection:"column",gap:14}}>
+
+      {/* Content card */}
+      <div style={card}>
+        <div style={{...secTitle,color:C.purple}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:C.purple,flexShrink:0,display:"inline-block"}}/>
+          Content
+          <div style={{marginLeft:"auto",display:"flex",gap:4}}>
             {[["logo","🏷 Logo"],["text","✏ Text"]].map(([m,lbl])=>(
-              <button key={m} onClick={()=>{setOverlayMode(m);setBlob(null)}} style={{padding:"4px 10px",borderRadius:6,border:"1px solid",borderColor:overlayMode===m?"rgba(124,58,237,0.6)":"rgba(255,255,255,0.08)",background:overlayMode===m?"rgba(124,58,237,0.2)":"rgba(255,255,255,0.02)",color:overlayMode===m?"#c4b5fd":"#6b7280",fontSize:10,fontWeight:700,cursor:"pointer"}}>{lbl}</button>
+              <button key={m} onClick={()=>{setOverlayMode(m);setBlob(null)}} style={{padding:"4px 11px",borderRadius:6,border:"1px solid",borderColor:overlayMode===m?"rgba(124,58,237,0.6)":"rgba(255,255,255,0.1)",background:overlayMode===m?"rgba(124,58,237,0.22)":"rgba(255,255,255,0.03)",color:overlayMode===m?"#d4b8ff":"#9ca3af",fontSize:10,fontWeight:700,cursor:"pointer"}}>{lbl}</button>
             ))}
           </div>
         </div>
         {overlayMode==="logo"?(
-          <DZ id="fl-logo" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setLogo(d);setBlob(null)}} dragColor="rgba(124,58,237,0.7)">
-            {logo?<div style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6}}><img src={logo} style={{maxWidth:100,maxHeight:56,objectFit:"contain",filter:"drop-shadow(0 0 12px rgba(124,58,237,0.5))"}} alt=""/><span style={{fontSize:10,color:"#a78bfa"}}>Tap to replace</span></div>:<><div style={{fontSize:22,opacity:0.25,marginBottom:5}}>⊕</div><div style={{fontSize:13,color:C.muted}}>Drop or tap — PNG / SVG</div><div style={{fontSize:10,color:C.subtle,marginTop:2}}>Transparent bg recommended</div></>}
-          </DZ>
+          <>
+            <DZ id="fl-logo" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setLogo(d);setBlob(null)}} dragColor="rgba(124,58,237,0.7)">
+              {logo?<div style={{display:"flex",alignItems:"center",gap:12,padding:"4px 0"}}><img src={logo} style={{maxWidth:80,maxHeight:48,objectFit:"contain",filter:"drop-shadow(0 0 10px rgba(124,58,237,0.5))"}} alt=""/><div><div style={{fontSize:12,color:"#c4b5fd",fontWeight:600}}>Logo uploaded</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>Click to replace</div></div></div>:<><div style={{fontSize:22,opacity:0.2,marginBottom:5}}>⊕</div><div style={{fontSize:13,color:"#9ca3af"}}>Drop or click — PNG / SVG</div><div style={{fontSize:10,color:"#4b5563",marginTop:2}}>Transparent background recommended</div></>}
+            </DZ>
+            {logo&&<div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
+              <button onClick={()=>{setEditMode(p=>!p);setPlaying(false)}} style={{width:"100%",padding:"9px",borderRadius:8,border:"1px solid",borderColor:editMode?"rgba(124,58,237,0.6)":"rgba(255,255,255,0.1)",background:editMode?"rgba(124,58,237,0.15)":"rgba(255,255,255,0.03)",color:editMode?"#c4b5fd":"#9ca3af",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+                {editMode?"✓ Done positioning":"✥ Move & resize on preview →"}
+              </button>
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <span style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Size</span>
+                <input type="range" min="5" max="95" value={logoScale} onChange={e=>{const v=Number(e.target.value);setLogoScale(v);posRef.current={...posRef.current,s:v}}}/>
+                <span style={{fontSize:10,color:"#9ca3af",flexShrink:0,width:28,textAlign:"right"}}>{logoScale}%</span>
+                <button onClick={()=>{setLx(50);setLy(50);setLogoScale(55);posRef.current={x:50,y:50,s:55}}} style={{fontSize:10,background:"none",border:"none",color:C.purple,cursor:"pointer",fontWeight:700,flexShrink:0}}>Reset</button>
+              </div>
+            </div>}
+          </>
         ):(
-          <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            <input value={textLine} onChange={e=>{setTextLine(e.target.value);setBlob(null)}} placeholder="YOUR BRAND" style={{width:"100%",padding:"11px 13px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:16,fontWeight:800,outline:"none",letterSpacing:"0.02em",fontFamily:ff(textFont)}}/>
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <input value={textLine} onChange={e=>{setTextLine(e.target.value);setBlob(null)}} placeholder="YOUR BRAND" style={{width:"100%",padding:"11px 13px",borderRadius:9,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#ffffff",fontSize:16,fontWeight:800,outline:"none",letterSpacing:"0.02em",fontFamily:ff(textFont)}}/>
             <FontColorPicker font={textFont} setFont={f=>{setTextFont(f);setBlob(null)}} color={textColor} setColor={c=>{setTextColor(c);setBlob(null)}} accent={C.purple}/>
-            <div><div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}><span style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:"0.08em",textTransform:"uppercase"}}>Text Size</span><span style={{fontSize:9,color:C.muted}}>{textSize}%</span></div><input type="range" min="20" max="100" value={textSize} onChange={e=>{setTextSize(Number(e.target.value));setBlob(null)}}/></div>
-          </div>
-        )}
-        {overlayMode==="logo"&&logo&&(
-          <div style={{marginTop:8}}>
-            <button onClick={()=>{setEditMode(p=>!p);setPlaying(false)}} style={{width:"100%",padding:"8px",borderRadius:8,border:"1px solid",borderColor:editMode?"rgba(124,58,237,0.5)":"rgba(255,255,255,0.08)",background:editMode?"rgba(124,58,237,0.1)":"rgba(255,255,255,0.02)",color:editMode?"#c4b5fd":"#6b7280",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-              {editMode?"✓ Done — tap preview to confirm":"✥ Move & resize logo on preview"}
-            </button>
-            <div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
-              <span style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:"0.08em",textTransform:"uppercase",flexShrink:0}}>Size</span>
-              <input type="range" min="5" max="95" value={logoScale} onChange={e=>{const v=Number(e.target.value);setLogoScale(v);posRef.current={...posRef.current,s:v}}}/>
-              <span style={{fontSize:9,color:C.muted,flexShrink:0,width:26,textAlign:"right"}}>{logoScale}%</span>
-              <button onClick={()=>{setLx(50);setLy(50);setLogoScale(55);posRef.current={x:50,y:50,s:55}}} style={{fontSize:9,background:"none",border:"none",color:C.purple,cursor:"pointer",fontWeight:700,flexShrink:0}}>Reset</button>
-            </div>
+            <div><div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase"}}>Text Size</span><span style={{fontSize:10,color:"#9ca3af"}}>{textSize}%</span></div><input type="range" min="20" max="100" value={textSize} onChange={e=>{setTextSize(Number(e.target.value));setBlob(null)}}/></div>
           </div>
         )}
       </div>
 
-      {/* 02 Backgrounds */}
-      <div>
-        <SLabel n="02" title={`Backgrounds (${bgs.length})`} color="#8b5cf6"/>
+      {/* Backgrounds card */}
+      <div style={card}>
+        <div style={{...secTitle,color:"#a78bfa"}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"#a78bfa",flexShrink:0,display:"inline-block"}}/>
+          Backgrounds
+          {bgs.length>0&&<span style={{marginLeft:4,fontSize:9,color:"#6b7280",fontWeight:500}}>({bgs.length} added)</span>}
+        </div>
         <DZ id="fl-bg" accept="image/*" multi onFiles={async files=>{const ds=await Promise.all(files.filter(f=>f.type.startsWith("image/")).map(readFile));setBgs(p=>[...p,...ds]);setBlob(null)}} dragColor="rgba(139,92,246,0.7)">
-          <div style={{fontSize:18,opacity:0.25,marginBottom:3}}>⊞</div>
-          <div style={{fontSize:13,color:C.muted}}>Add background images</div>
-          <div style={{fontSize:10,color:C.subtle,marginTop:2}}>Each cuts every 250ms</div>
+          <div style={{fontSize:16,opacity:0.2,marginBottom:3}}>⊞</div>
+          <div style={{fontSize:13,color:"#9ca3af"}}>Drop or click to add images</div>
+          <div style={{fontSize:10,color:"#4b5563",marginTop:2}}>Each background cuts every 250ms</div>
         </DZ>
-        {bgs.length>0&&<div style={{marginTop:8,display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:4}}>{bgs.map((s,i)=><div key={i} style={{position:"relative",borderRadius:6,overflow:"hidden",aspectRatio:"1",border:curBg===i&&playing?"2px solid #7c3aed":"2px solid rgba(255,255,255,0.05)"}}><img src={s} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/><button onClick={()=>{setBgs(p=>p.filter((_,j)=>j!==i));setBlob(null)}} style={{position:"absolute",top:1,right:1,background:"rgba(0,0,0,0.8)",border:"none",color:"#fff",width:14,height:14,borderRadius:99,fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button></div>)}</div>}
+        {bgs.length>0&&<div style={{marginTop:10,display:"grid",gridTemplateColumns:"repeat(6,1fr)",gap:5}}>{bgs.map((s,i)=><div key={i} style={{position:"relative",borderRadius:7,overflow:"hidden",aspectRatio:"1",border:curBg===i&&playing?"2px solid #7c3aed":"2px solid rgba(255,255,255,0.06)",transition:"border-color 0.1s"}}><img src={s} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/><button onClick={()=>{setBgs(p=>p.filter((_,j)=>j!==i));setBlob(null)}} style={{position:"absolute",top:2,right:2,background:"rgba(0,0,0,0.8)",border:"none",color:"#fff",width:14,height:14,borderRadius:99,fontSize:8,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}>✕</button></div>)}</div>}
       </div>
 
-      {/* 03 Ratio */}
-      <div>
-        <SLabel n="03" title="Ratio" color="#a78bfa"/>
-        <div style={{display:"flex",gap:6}}>{RATIOS.map(r=><Pill key={r.key} active={ratio===r.key} onClick={()=>{setRatio(r.key);setBlob(null)}}>{r.label}</Pill>)}</div>
+      {/* Export settings card */}
+      <div style={card}>
+        <div style={{...secTitle,color:"#c4b5fd"}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"#c4b5fd",flexShrink:0,display:"inline-block"}}/>
+          Export Settings
+        </div>
+        <div style={{display:"flex",flexDirection:"column",gap:14}}>
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Aspect Ratio</div>
+            <div style={{display:"flex",gap:6}}>{RATIOS.map(r=><Pill key={r.key} active={ratio===r.key} onClick={()=>{setRatio(r.key);setBlob(null)}}>{r.label}</Pill>)}</div>
+          </div>
+          <div>
+            <div style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Loops</div>
+            <div style={{display:"flex",gap:6}}>{[1,2,3].map(n=><Pill key={n} active={loops===n} color="#8b5cf6" onClick={()=>{setLoops(n);setBlob(null)}}>{n}× {n===1?"Once":n===2?"Twice":"3×"}</Pill>)}</div>
+            {bgs.length>0&&<p style={{fontSize:10,color:"#6b7280",marginTop:6}}>≈ {dur}s total export</p>}
+          </div>
+        </div>
       </div>
 
-      {/* 04 Loops */}
-      <div>
-        <SLabel n="04" title="Loops" color="#c4b5fd"/>
-        <div style={{display:"flex",gap:6}}>{[1,2,3].map(n=><Pill key={n} active={loops===n} color="#8b5cf6" onClick={()=>{setLoops(n);setBlob(null)}}>{n}× {n===1?"Once":n===2?"Twice":"3×"}</Pill>)}</div>
-        {bgs.length>0&&<p style={{fontSize:10,color:C.muted,marginTop:5,textAlign:"center"}}>≈ {dur}s total</p>}
-      </div>
-
-      {/* 05 Audio */}
-      <div>
-        <SLabel n="05" title="Audio" color={C.green} opt/>
+      {/* Audio card */}
+      <div style={card}>
+        <div style={{...secTitle,color:C.green}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:C.green,flexShrink:0,display:"inline-block"}}/>
+          Audio
+          <span style={{fontSize:8,color:"#6b7280",fontWeight:500,marginLeft:2}}>optional</span>
+        </div>
         {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>{setAudio(null);setBlob(null)}}/>
-          :<DZ id="fl-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration});setBlob(null)}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:13,color:C.muted}}>♪ Drop MP3 / WAV</div><div style={{fontSize:10,color:C.subtle,marginTop:1}}>Optional · plays over video</div></DZ>}
+          :<DZ id="fl-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration});setBlob(null)}} dragColor="rgba(52,211,153,0.6)" compact>
+            <div style={{fontSize:13,color:"#9ca3af"}}>♪ Drop MP3 / WAV</div>
+            <div style={{fontSize:10,color:"#4b5563",marginTop:1}}>Plays over the full video on export</div>
+          </DZ>}
       </div>
 
-      {/* Preview */}
-      <div style={{display:"flex",flexDirection:"column",gap:8}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <span style={{fontSize:11,fontWeight:700,color:editMode?"#a78bfa":C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>
-            {editMode?"✥ Drag · scroll/pinch to scale":`Preview · ${ratio.replace("x",":")} `}
-          </span>
-          {!editMode&&<PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)}/>}
-          {editMode&&<button onClick={()=>setEditMode(false)} style={{padding:"5px 12px",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer",background:"rgba(124,58,237,0.2)",border:"1px solid rgba(124,58,237,0.5)",color:"#c4b5fd"}}>✓ Done</button>}
-        </div>
-        <div ref={wrapRef} style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.6)":"rgba(255,255,255,0.07)"},0 16px 48px rgba(0,0,0,0.7)`,background:"#111118",width:pw,height:ph,flexShrink:0,alignSelf:"center",cursor:editMode?"move":"default",touchAction:editMode?"none":"auto",transition:"box-shadow 0.2s"}}>
-          <canvas ref={prevRef} width={R2.w} height={R2.h} style={{width:pw,height:ph,display:"block",userSelect:"none"}}/>
-          {(!logo&&bgs.length===0&&overlayMode==="logo")&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:26,opacity:0.1}}>⚡</div><p style={{fontSize:11,color:"#4b5563",margin:0,textAlign:"center",padding:"0 16px"}}>Upload logo + backgrounds to preview</p></div>}
-          {editMode&&<div style={{position:"absolute",bottom:8,left:0,right:0,display:"flex",justifyContent:"center",pointerEvents:"none"}}><div style={{background:"rgba(0,0,0,0.65)",backdropFilter:"blur(6px)",borderRadius:99,padding:"4px 12px",fontSize:10,color:"rgba(255,255,255,0.7)",fontWeight:600,letterSpacing:"0.03em"}}>drag · scroll or pinch to resize</div></div>}
-        </div>
-        {bgs.length>0&&!editMode&&<div style={{display:"flex",gap:3,flexWrap:"wrap",justifyContent:"center"}}>{bgs.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:curBg===i&&playing?"#7c3aed":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>}
-      </div>
+      {/* Export — mobile only (desktop shown under preview) */}
+      {!isDesktop&&<div>
+        <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+        {!canExp&&bgs.length>0&&<Hint>{overlayMode==="logo"?"Upload a logo":"Enter some text"} to export</Hint>}
+        {bgs.length===0&&<Hint>Add background images to export</Hint>}
+      </div>}
+    </div>
+  );
 
-      <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
-      {!canExp&&bgs.length>0&&<Hint>{overlayMode==="logo"?"Upload a logo":"Enter some text"} to export</Hint>}
-      {bgs.length===0&&<Hint>Add at least one background image</Hint>}
+  return isDesktop?(
+    // ── Desktop: preview left, settings right ──
+    <div style={{display:"flex",gap:0,height:"calc(100vh - 98px)",overflow:"hidden"}}>
+      {/* Left — preview */}
+      <div style={{flex:"0 0 auto",width:"42%",minWidth:320,maxWidth:520,padding:"24px 20px 24px 28px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.06)"}}>
+        {previewPanel}
+      </div>
+      {/* Right — settings */}
+      <div style={{flex:1,padding:"24px 28px 24px 20px",overflowY:"auto",display:"flex",flexDirection:"column",gap:0}}>
+        <div style={{maxWidth:480}}>
+          {settingsPanel}
+        </div>
+      </div>
+    </div>
+  ):(
+    // ── Mobile: stacked ──
+    <div style={{display:"flex",flexDirection:"column",gap:16,padding:"20px 16px 60px"}}>
+      {settingsPanel}
+      {previewPanel}
     </div>
   );
 }
