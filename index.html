@@ -17,6 +17,8 @@ input[type=range]{accent-color:#7c3aed;cursor:pointer;width:100%}
 ::-webkit-scrollbar{width:3px;height:3px}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
 @keyframes pulseGreen{0%,100%{box-shadow:0 0 16px rgba(52,211,153,0.15)}50%{box-shadow:0 0 28px rgba(52,211,153,0.4)}}
+@keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.animated-gradient{background:linear-gradient(90deg,#7c3aed,#c026d3,#ec4899,#f97316,#ec4899,#c026d3,#7c3aed);background-size:300% 300%;animation:gradientShift 4s ease infinite;}
 </style>
 </head>
 <body>
@@ -151,7 +153,7 @@ function Pill({active,onClick,color,children}){
 function ExportArea({disabled,onRender,exporting,prog,blob,onDownload,label}){
   return(
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
-      <button onClick={onRender} disabled={disabled} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:!disabled?"linear-gradient(135deg,#7c3aed,#ec4899)":"rgba(255,255,255,0.05)",color:!disabled?"#fff":C.muted,fontSize:14,fontWeight:800,cursor:!disabled?"pointer":"not-allowed",boxShadow:!disabled?"0 0 22px rgba(124,58,237,0.3)":"none",transition:"all 0.18s"}}>
+      <button onClick={onRender} disabled={disabled} className={!disabled&&!exporting?"animated-gradient":""} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:disabled?"rgba(255,255,255,0.05)":exporting?"rgba(255,255,255,0.05)":undefined,color:!disabled?"#fff":C.muted,fontSize:14,fontWeight:800,cursor:!disabled?"pointer":"not-allowed",boxShadow:!disabled&&!exporting?"0 0 28px rgba(200,40,200,0.35)":"none",transition:"all 0.18s"}}>
         {exporting?`Rendering… ${prog}%`:"⚙ Render Video"}
       </button>
       {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(255,255,255,0.06)",overflow:"hidden"}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
