@@ -1,3 +1,4 @@
+// v2 — uses GMAIL_APP_PASSWORD env var
 const nodemailer = require("nodemailer");
 
 module.exports = async function handler(req, res) {
