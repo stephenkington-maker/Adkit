@@ -393,7 +393,7 @@ function FlickApp(){
 
   // Multi-element drag system
   useEffect(()=>{
-    const canvas=prevRef.current;if(!canvas||!editMode)return;
+    const canvas=prevRef.current;if(!canvas)return;
     const ov=overlayRef.current;
     const dist=(t1,t2)=>Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
 
@@ -488,7 +488,7 @@ function FlickApp(){
     canvas.addEventListener("touchmove",onTouchMove,{passive:false});
     canvas.addEventListener("touchend",onTouchEnd);
     return()=>{canvas.removeEventListener("mousedown",onMouseDown);window.removeEventListener("mousemove",onMouseMove);window.removeEventListener("mouseup",onMouseUp);canvas.removeEventListener("wheel",onWheel);canvas.removeEventListener("touchstart",onTouchStart);canvas.removeEventListener("touchmove",onTouchMove);canvas.removeEventListener("touchend",onTouchEnd)};
-  },[editMode]);
+  },[]);
 
   const framesPerBg=Math.round((BG_MS/1000)*FPS);
   const totalFrames=loops*bgs.length*framesPerBg;
@@ -738,14 +738,11 @@ function FlickApp(){
         )}
       </div>
 
-      {/* Edit mode card */}
-      <div style={{...card,borderColor:editMode?"rgba(124,58,237,0.4)":"rgba(255,255,255,0.08)",background:editMode?"rgba(124,58,237,0.06)":"rgba(255,255,255,0.03)"}}>
-        <div style={{fontSize:11,color:editMode?"#c4b5fd":"#9ca3af",marginBottom:8,lineHeight:1.5}}>
-          {editMode?<><strong style={{color:"#a78bfa"}}>Edit mode on</strong> — tap the preview to select an element, then drag to reposition. Scroll/pinch to resize.<br/>{activeEl&&<span style={{fontSize:10,marginTop:2,display:"block"}}>Selected: <strong style={{color:"#c4b5fd",textTransform:"capitalize"}}>{activeEl==="sub"?"subline":activeEl}</strong></span>}</>:"Tap items directly on the preview to move them."}
+      {/* Drag hint */}
+      <div style={{padding:"10px 12px",borderRadius:9,background:"rgba(124,58,237,0.06)",border:"1px solid rgba(124,58,237,0.12)"}}>
+        <div style={{fontSize:10,color:"#9ca3af",lineHeight:1.5}}>
+          {activeEl?<span style={{color:"#c4b5fd"}}>✥ <strong style={{textTransform:"capitalize"}}>{activeEl==="sub"?"subline":activeEl}</strong> selected — drag to move · scroll/pinch to resize</span>:"✥ Drag any element on the preview to move it · scroll to resize"}
         </div>
-        <button onClick={()=>{setEditMode(p=>!p);setPlaying(false);setActiveEl(null);activeElRef.current=null}} style={{width:"100%",padding:"9px",borderRadius:8,border:"1px solid",borderColor:editMode?"rgba(124,58,237,0.5)":"rgba(255,255,255,0.1)",background:editMode?"rgba(124,58,237,0.15)":"rgba(255,255,255,0.03)",color:editMode?"#c4b5fd":"#9ca3af",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-          {editMode?"✓ Done — exit edit mode":"✥ Enter edit mode"}
-        </button>
       </div>
 
       {/* Backgrounds card */}
@@ -805,42 +802,49 @@ function FlickApp(){
     </div>
   );
 
-  // Canvas dimensions for desktop preview
-  const previewH=Math.min(window.innerHeight-140,window.innerWidth*0.65*R2.h/R2.w);
+  // Canvas size: fill 50% width, constrained by height
+  const colW=window.innerWidth*0.5;
+  const previewH=Math.min(window.innerHeight-160,colW-40)*R2.h/R2.w;
   const previewW=Math.round(previewH*R2.w/R2.h);
 
   return isDesktop?(
     <div style={{display:"flex",height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
-      {/* LEFT — Preview (65%) */}
-      <div style={{flex:"0 0 65%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"20px 16px",borderRight:"1px solid rgba(255,255,255,0.07)",gap:12,overflow:"hidden",background:"rgba(0,0,0,0.15)"}}>
+      {/* LEFT — Preview 50% */}
+      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"16px",borderRight:"1px solid rgba(255,255,255,0.07)",gap:10,overflow:"hidden",background:"rgba(0,0,0,0.12)"}}>
         {/* Preview header */}
-        <div style={{width:previewW,maxWidth:"100%",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <span style={{fontSize:11,fontWeight:700,color:editMode?"#c4b5fd":"#6b7280",letterSpacing:"0.06em",textTransform:"uppercase"}}>
-            {editMode?"✥ Tap to select · drag to move · scroll to resize":`Preview · ${ratio.replace("x",":")}`}
+        <div style={{width:previewW,maxWidth:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+          <span style={{fontSize:11,fontWeight:700,color:activeEl?"#c4b5fd":"#6b7280",letterSpacing:"0.06em",textTransform:"uppercase"}}>
+            {activeEl?`✥ ${activeEl==="sub"?"subline":activeEl} — drag · scroll to resize`:`Preview · ${ratio.replace("x",":")}`}
           </span>
-          <div style={{display:"flex",gap:6}}>
-            {!editMode&&<PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)}/>}
-            {editMode&&<button onClick={()=>{setEditMode(false);setActiveEl(null);activeElRef.current=null}} style={{padding:"5px 14px",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer",background:"rgba(124,58,237,0.2)",border:"1px solid rgba(124,58,237,0.5)",color:"#c4b5fd"}}>✓ Done</button>}
-          </div>
+          <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)}/>
         </div>
-        {/* Canvas */}
-        <div ref={wrapRef} style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.7)":"rgba(255,255,255,0.1)"},0 24px 80px rgba(0,0,0,0.8)`,background:"#22223a",width:previewW,height:previewH,cursor:editMode?"crosshair":"default",touchAction:editMode?"none":"auto",transition:"box-shadow 0.2s",flexShrink:0}}>
+        {/* Canvas — always draggable */}
+        <div ref={wrapRef} style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.1),0 24px 80px rgba(0,0,0,0.8)",background:"#22223a",width:previewW,height:previewH,cursor:"move",touchAction:"none",flexShrink:0}}>
           <canvas ref={prevRef} width={R2.w} height={R2.h} style={{width:previewW,height:previewH,display:"block",userSelect:"none"}}/>
           {(!logo&&bgs.length===0&&overlayMode==="logo")&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:48,opacity:0.07}}>⚡</div><p style={{fontSize:13,color:"#374151",margin:0,textAlign:"center",padding:"0 24px",lineHeight:1.7}}>Upload a logo and add background images to preview</p></div>}
-          {editMode&&<div style={{position:"absolute",bottom:12,left:0,right:0,display:"flex",justifyContent:"center",pointerEvents:"none"}}><div style={{background:"rgba(0,0,0,0.75)",backdropFilter:"blur(8px)",borderRadius:99,padding:"6px 16px",fontSize:11,color:"rgba(255,255,255,0.8)",fontWeight:600,letterSpacing:"0.03em"}}>{activeEl?`Selected: ${activeEl==="sub"?"subline":activeEl} — drag to move`:"Tap an element to select it"}</div></div>}
+          {activeEl&&<div style={{position:"absolute",bottom:10,left:0,right:0,display:"flex",justifyContent:"center",pointerEvents:"none"}}><div style={{background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",borderRadius:99,padding:"4px 14px",fontSize:10,color:"rgba(255,255,255,0.75)",fontWeight:600}}>drag to move · scroll to resize</div></div>}
         </div>
         {/* Scene dots */}
-        {bgs.length>0&&!editMode&&<div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center",width:previewW,maxWidth:"100%"}}>{bgs.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:curBg===i&&playing?"#7c3aed":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>}
-        {/* Export under preview on desktop */}
-        <div style={{width:previewW,maxWidth:"100%"}}>
-          <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={audio?"Video + Audio .webm":".webm"} status={exportStatus}/>
-          {!canExp&&bgs.length>0&&<Hint style={{marginTop:6}}>{overlayMode==="logo"?"Upload a logo":"Enter some text"} to export</Hint>}
-          {bgs.length===0&&<Hint>Add background images to export</Hint>}
-        </div>
+        {bgs.length>0&&<div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center",flexShrink:0}}>{bgs.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:curBg===i&&playing?"#7c3aed":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>}
       </div>
-      {/* RIGHT — Settings (35%) */}
-      <div style={{flex:"0 0 35%",overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:12}}>
-        {settingsPanel}
+
+      {/* RIGHT — Settings 50% with sticky render at bottom */}
+      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        {/* Scrollable settings */}
+        <div style={{flex:1,overflowY:"auto",padding:"16px 20px 8px",display:"flex",flexDirection:"column",gap:12}}>
+          {settingsPanel}
+        </div>
+        {/* Sticky render button at bottom */}
+        <div style={{flexShrink:0,padding:"12px 20px 16px",borderTop:"1px solid rgba(255,255,255,0.07)",background:"#090910"}}>
+          <button onClick={()=>run(R2.w,R2.h)} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"14px",borderRadius:10,border:"none",background:exporting?"rgba(255,255,255,0.05)":undefined,color:"#fff",fontSize:14,fontWeight:800,cursor:exporting?"not-allowed":"pointer",boxShadow:!exporting?"0 0 28px rgba(200,40,200,0.35)":"none",transition:"all 0.18s"}}>
+            {exporting?(exportStatus||`Rendering… ${prog}%`):"⚙ Render Video"}
+          </button>
+          {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(255,255,255,0.06)",overflow:"hidden",marginTop:6}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
+          {blob&&!exporting&&<button onClick={download} style={{width:"100%",padding:"13px",borderRadius:10,border:"1px solid rgba(52,211,153,0.4)",background:"rgba(52,211,153,0.08)",color:"#6ee7b7",fontSize:14,fontWeight:800,cursor:"pointer",marginTop:8,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {audio?"Video + Audio":""} .webm · {blob?(blob.size/1024/1024).toFixed(1):0} MB</button>}
+          {!exporting&&!blob&&<p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginTop:6,lineHeight:1.5}}>
+            {bgs.length===0?"Add background images first":!logo&&overlayMode==="logo"?"Upload a logo first":"Ready to render"}
+          </p>}
+        </div>
       </div>
     </div>
   ):(
@@ -855,7 +859,7 @@ function FlickApp(){
             {editMode&&<button onClick={()=>{setEditMode(false);setActiveEl(null);activeElRef.current=null}} style={{padding:"5px 12px",borderRadius:7,fontSize:11,fontWeight:700,cursor:"pointer",background:"rgba(124,58,237,0.2)",border:"1px solid rgba(124,58,237,0.5)",color:"#c4b5fd"}}>✓ Done</button>}
           </div>
         </div>
-        <div ref={wrapRef} style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.7)":"rgba(255,255,255,0.08)"},0 16px 48px rgba(0,0,0,0.7)`,background:"#22223a",width:pw,height:ph,alignSelf:"center",cursor:editMode?"crosshair":"default",touchAction:editMode?"none":"auto"}}>
+        <div ref={wrapRef} style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.7)":"rgba(255,255,255,0.08)"},0 16px 48px rgba(0,0,0,0.7)`,background:"#22223a",width:pw,height:ph,alignSelf:"center",cursor:"move",touchAction:editMode?"none":"auto"}}>
           <canvas ref={prevRef} width={R2.w} height={R2.h} style={{width:pw,height:ph,display:"block",userSelect:"none"}}/>
           {(!logo&&bgs.length===0&&overlayMode==="logo")&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>⚡</div><p style={{fontSize:11,color:"#4b5563",margin:0,textAlign:"center",padding:"0 16px"}}>Upload logo + backgrounds to preview</p></div>}
         </div>
