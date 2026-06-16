@@ -162,11 +162,11 @@ function Pill({active,onClick,color,children}){
   );
 }
 
-function ExportArea({disabled,onRender,exporting,prog,blob,onDownload,label}){
+function ExportArea({disabled,onRender,exporting,prog,blob,onDownload,label,status}){
   return(
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       <button onClick={onRender} disabled={disabled} className={!disabled&&!exporting?"animated-gradient":""} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:disabled?"rgba(255,255,255,0.05)":exporting?"rgba(255,255,255,0.05)":undefined,color:!disabled?"#fff":C.muted,fontSize:14,fontWeight:800,cursor:!disabled?"pointer":"not-allowed",boxShadow:!disabled&&!exporting?"0 0 28px rgba(200,40,200,0.35)":"none",transition:"all 0.18s"}}>
-        {exporting?`Rendering… ${prog}%`:"⚙ Render Video"}
+        {exporting?(status||`Rendering… ${prog}%`):"⚙ Render Video"}
       </button>
       {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(255,255,255,0.06)",overflow:"hidden"}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
       {blob&&!exporting&&<button onClick={onDownload} style={{width:"100%",padding:"13px",borderRadius:10,border:"1px solid rgba(52,211,153,0.4)",background:"rgba(52,211,153,0.08)",color:"#6ee7b7",fontSize:14,fontWeight:800,cursor:"pointer",animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {label} · {(blob.size/1024/1024).toFixed(1)} MB</button>}
@@ -492,8 +492,121 @@ function FlickApp(){
 
   const framesPerBg=Math.round((BG_MS/1000)*FPS);
   const totalFrames=loops*bgs.length*framesPerBg;
+  const totalDurSec=totalFrames/FPS;
   const renderFn=useCallback((canvas,f)=>drawFrame(canvas,Math.floor(f/framesPerBg)%bgs.length,null),[drawFrame,framesPerBg,bgs.length]);
-  const{run,download,prog,exporting,blob,setBlob}=useExport(renderFn,totalFrames,`flick-${ratio}-${loops}x.webm`);
+
+  // Custom export with optional audio muxing
+  const[prog,setProg]=useState(0);
+  const[exporting,setExporting]=useState(false);
+  const[blob,setBlob]=useState(null);
+  const[exportStatus,setExportStatus]=useState("");
+
+  const run=useCallback(async(w,h)=>{
+    setExporting(true);setProg(0);setBlob(null);setExportStatus("");
+    const canvas=document.createElement("canvas");canvas.width=w;canvas.height=h;
+
+    // Step 1: Render video frames
+    setExportStatus("Rendering frames…");
+    const stream=canvas.captureStream(FPS);
+    const MIME="video/webm";
+    const rec=new MediaRecorder(stream,{mimeType:MIME,videoBitsPerSecond:8000000});
+    const chunks=[];
+    rec.ondataavailable=e=>{if(e.data?.size>0)chunks.push(e.data)};
+    rec.start();let f=0;
+    const videoBlob=await new Promise(res=>{
+      rec.onstop=()=>res(new Blob(chunks,{type:MIME}));
+      const iv=setInterval(()=>{
+        if(f>=totalFrames){clearInterval(iv);rec.requestData();setTimeout(()=>rec.stop(),200);return}
+        renderFn(canvas,f);rec.requestData();f++;
+        setProg(audio?Math.round((f/totalFrames)*60):Math.round((f/totalFrames)*100));
+      },1000/FPS);
+    });
+
+    // If no audio — done
+    if(!audio){setBlob(videoBlob);setExporting(false);setProg(100);setExportStatus("");return}
+
+    // Step 2: Mix audio using Web Audio + MediaRecorder replay
+    setExportStatus("Mixing audio…");setProg(65);
+    try{
+      // Decode audio file
+      const audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+      const audioResp=await fetch(audio.url);
+      const audioArr=await audioResp.arrayBuffer();
+      const audioBuffer=await audioCtx.decodeAudioData(audioArr);
+
+      // Set up output canvas for final mux
+      const outCanvas=document.createElement("canvas");outCanvas.width=w;outCanvas.height=h;
+      const outCtx2=outCanvas.getContext("2d");
+
+      // Audio destination stream
+      const audioDestCtx=new AudioContext();
+      const audioDest=audioDestCtx.createMediaStreamDestination();
+      const gainNode=audioDestCtx.createGain();gainNode.gain.value=1;
+      gainNode.connect(audioDest);
+
+      // Decode audio again for playback context
+      const audioResp2=await fetch(audio.url);
+      const audioArr2=await audioResp2.arrayBuffer();
+      const audioBuffer2=await audioDestCtx.decodeAudioData(audioArr2);
+      const audioSrc=audioDestCtx.createBufferSource();
+      audioSrc.buffer=audioBuffer2;audioSrc.loop=true;
+      audioSrc.connect(gainNode);
+
+      // Combined stream: video + audio
+      const videoStream=outCanvas.captureStream(FPS);
+      const combinedStream=new MediaStream([
+        ...videoStream.getVideoTracks(),
+        ...audioDest.stream.getAudioTracks(),
+      ]);
+      const finalChunks=[];
+      const finalRec=new MediaRecorder(combinedStream,{mimeType:MIME,videoBitsPerSecond:8000000});
+      finalRec.ondataavailable=e=>{if(e.data?.size>0)finalChunks.push(e.data)};
+      finalRec.onstop=()=>{
+        setBlob(new Blob(finalChunks,{type:MIME}));
+        setExporting(false);setProg(100);setExportStatus("");
+        audioDestCtx.close();
+      };
+
+      // Play video back through canvas while recording with audio
+      const videoEl=document.createElement("video");
+      const videoUrl=URL.createObjectURL(videoBlob);
+      videoEl.src=videoUrl;videoEl.muted=true;
+      await new Promise(r=>{videoEl.onloadeddata=r;videoEl.load()});
+
+      finalRec.start();
+      audioSrc.start(0);
+      setExportStatus("Muxing video + audio…");
+
+      const drawLoop=()=>{
+        if(videoEl.ended||videoEl.paused){
+          finalRec.requestData();
+          setTimeout(()=>finalRec.stop(),300);
+          URL.revokeObjectURL(videoUrl);
+          return;
+        }
+        outCtx2.drawImage(videoEl,0,0,w,h);
+        finalRec.requestData();
+        setProg(65+Math.round((videoEl.currentTime/videoEl.duration)*35));
+        requestAnimationFrame(drawLoop);
+      };
+      videoEl.onended=()=>{finalRec.requestData();setTimeout(()=>finalRec.stop(),300);URL.revokeObjectURL(videoUrl)};
+      await videoEl.play();
+      requestAnimationFrame(drawLoop);
+
+    }catch(err){
+      console.error("Audio mux failed:",err);
+      // Fallback: video only
+      setBlob(videoBlob);setExporting(false);setProg(100);setExportStatus("⚠ Audio mix failed — video exported without audio");
+    }
+  },[renderFn,totalFrames,audio,totalDurSec]);
+
+  const download=useCallback(()=>{
+    if(!blob)return;
+    const u=URL.createObjectURL(blob);
+    const a=document.createElement("a");a.href=u;a.download=`flick-${ratio}-${loops}x${audio?"-audio":""}.webm`;
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(u),2000);
+  },[blob,ratio,loops,audio]);
 
   const dur=((bgs.length*loops*BG_MS)/1000).toFixed(1);
   const canExp=(overlayMode==="text"?textLine.trim().length>0:!!logo)&&bgs.length>0&&!exporting;
@@ -720,7 +833,7 @@ function FlickApp(){
         {bgs.length>0&&!editMode&&<div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center",width:previewW,maxWidth:"100%"}}>{bgs.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:curBg===i&&playing?"#7c3aed":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>}
         {/* Export under preview on desktop */}
         <div style={{width:previewW,maxWidth:"100%"}}>
-          <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+          <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={audio?"Video + Audio .webm":".webm"} status={exportStatus}/>
           {!canExp&&bgs.length>0&&<Hint style={{marginTop:6}}>{overlayMode==="logo"?"Upload a logo":"Enter some text"} to export</Hint>}
           {bgs.length===0&&<Hint>Add background images to export</Hint>}
         </div>
