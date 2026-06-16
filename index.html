@@ -8,7 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&family=Bebas+Neue&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800&family=DM+Serif+Display&family=Montserrat:wght@700;800;900&family=Raleway:wght@700;800;900&family=Unbounded:wght@700;800;900&family=Cormorant+Garamond:wght@600;700&family=Archivo+Black&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&family=Bebas+Neue&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800&family=DM+Serif+Display&family=Montserrat:wght@700;800;900&family=Raleway:wght@700;800;900&family=Unbounded:wght@700;800;900&family=Cormorant+Garamond:wght@600;700&family=Archivo+Black&family=Poppins:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{height:100%;width:100%}
 body{background:#090910;color:#e8e8f2;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
@@ -256,6 +256,22 @@ function FlickApp(){
   const[textFont,setTextFont]=useState("Inter");
   const[textColor,setTextColor]=useState("#ffffff");
   const[textSize,setTextSize]=useState(60);
+  // Subline
+  const[subline,setSubline]=useState("");
+  const[subColor,setSubColor]=useState("#e8e8f2");
+  const[subSize,setSubSize]=useState(28);
+  // Emoji
+  const[emoji,setEmoji]=useState("");
+  const[emojiSize,setEmojiSize]=useState(40);
+  // Per-element positions (all as % of canvas)
+  const[logoPos,setLogoPos]=useState({x:50,y:50,s:55});
+  const[textPos,setTextPos]=useState({x:50,y:42});
+  const[subPos,setSubPos]=useState({x:50,y:58});
+  const[emojiPos,setEmojiPos]=useState({x:50,y:25});
+  // Which element is being dragged
+  const[activeEl,setActiveEl]=useState(null); // null|"logo"|"text"|"sub"|"emoji"
+  const[showSubline,setShowSubline]=useState(false);
+  const[showEmoji,setShowEmoji]=useState(false);
 
   const prevRef=useRef(null);
   const wrapRef=useRef(null);
@@ -267,59 +283,89 @@ function FlickApp(){
   const posRef=useRef({x:50,y:50,s:55});
   const dragRef=useRef({active:false,startX:0,startY:0,startLx:50,startLy:50});
   const pinchRef=useRef({active:false,startDist:0,startScale:55});
+  const activeElRef=useRef(null);
   // keep latest values accessible in event handlers without stale closure
-  const overlayRef=useRef({mode:"logo",text:"YOUR BRAND",font:"Inter",color:"#ffffff",size:60});
+  const overlayRef=useRef({mode:"logo",text:"YOUR BRAND",font:"Inter",color:"#ffffff",size:60,
+    subline:"",subColor:"#e8e8f2",subSize:28,
+    emoji:"",emojiSize:40,
+    logoPos:{x:50,y:50,s:55},textPos:{x:50,y:42},subPos:{x:50,y:58},emojiPos:{x:50,y:25}
+  });
 
   const R=RATIOS.find(r=>r.key===ratio);
 
   useEffect(()=>{posRef.current={x:lx,y:ly,s:logoScale}},[lx,ly,logoScale]);
-  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize}},[overlayMode,textLine,textFont,textColor,textSize]);
+  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos]);
   useEffect(()=>{if(!logo){logoRef.current=null;return}loadImg(logo).then(i=>logoRef.current=i)},[logo]);
   useEffect(()=>{bgRefs.current=new Array(bgs.length).fill(null);bgs.forEach((src,i)=>loadImg(src).then(im=>bgRefs.current[i]=im))},[bgs]);
 
-  const drawFrame=useCallback((canvas,bgIdx,showGuide)=>{
+  const drawFrame=useCallback((canvas,bgIdx,activeElArg)=>{
     const ctx=canvas.getContext("2d");
     const W=canvas.width,H=canvas.height;
     ctx.clearRect(0,0,W,H);
+    // Background
     const bg=bgRefs.current[bgIdx];
     if(bg){const s=Math.max(W/bg.width,H/bg.height);const sw=bg.width*s,sh=bg.height*s;ctx.drawImage(bg,(W-sw)/2,(H-sh)/2,sw,sh)}
     else{ctx.fillStyle="#111118";ctx.fillRect(0,0,W,H)}
     ctx.globalAlpha=0.22;ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
-    const{x,y,s:sc}=posRef.current;
     const ov=overlayRef.current;
+
+    // Helper: draw selection guide around a rect
+    const guide=(rx,ry,rw,rh,el)=>{
+      if(activeElArg!==el)return;
+      ctx.save();ctx.strokeStyle="#a78bfa";ctx.lineWidth=Math.max(1.5,W*0.003);
+      ctx.setLineDash([W*0.01,W*0.007]);ctx.strokeRect(rx-4,ry-4,rw+8,rh+8);ctx.setLineDash([]);
+      const hs=Math.max(5,W*0.015);
+      [[rx-4,ry-4],[rx+rw+4-hs,ry-4],[rx-4,ry+rh+4-hs],[rx+rw+4-hs,ry+rh+4-hs]].forEach(([cx,cy])=>{ctx.fillStyle="#a78bfa";ctx.fillRect(cx,cy,hs,hs)});
+      ctx.restore();
+    };
+
+    // Emoji
+    if(ov.emoji){
+      const ep=ov.emojiPos;const fs=Math.round(W*(ov.emojiSize/100)*0.1);
+      ctx.font=`${fs}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";
+      ctx.fillText(ov.emoji,W*ep.x/100,H*ep.y/100);
+      guide(W*ep.x/100-fs/2,H*ep.y/100-fs/2,fs,fs,"emoji");
+      ctx.textAlign="left";ctx.textBaseline="alphabetic";
+    }
+
+    // Main text (headline)
     if(ov.mode==="text"&&ov.text){
-      const fs=Math.round(W*(ov.size/100)*0.12);
-      ctx.font=`900 ${fs}px ${ff(ov.font)}`;
-      ctx.fillStyle=ov.color;
+      const tp=ov.textPos;const fs=Math.round(W*(ov.size/100)*0.12);
+      ctx.font=`900 ${fs}px ${ff(ov.font)}`;ctx.fillStyle=ov.color;
       ctx.textAlign="center";ctx.textBaseline="middle";
       const words=ov.text.split(" ");let lines=[],cur="";
       words.forEach(w=>{const t2=cur?cur+" "+w:w;if(ctx.measureText(t2).width>W*0.86&&cur){lines.push(cur);cur=w}else cur=t2});
       if(cur)lines.push(cur);
-      const totalH=lines.length*fs*1.3;
-      const sy=H*y/100-totalH/2+fs/2;
-      lines.forEach((l,i)=>ctx.fillText(l,W*x/100,sy+i*fs*1.3));
+      const totalH=lines.length*fs*1.3;const sx=W*tp.x/100;const sy=H*tp.y/100-totalH/2+fs/2;
+      lines.forEach((l,i)=>ctx.fillText(l,sx,sy+i*fs*1.3));
+      guide(sx-W*ov.size/100/2,H*tp.y/100-totalH/2-6,W*ov.size/100,totalH+12,"text");
       ctx.textAlign="left";ctx.textBaseline="alphabetic";
-      if(showGuide){
-        ctx.strokeStyle="rgba(124,58,237,0.7)";ctx.lineWidth=2;ctx.setLineDash([6,4]);
-        ctx.strokeRect(W*x/100-W*ov.size/100/2,H*y/100-totalH/2-8,W*ov.size/100,totalH+16);
-        ctx.setLineDash([]);
-      }
-    } else {
-      const lg=logoRef.current;
+    }
+
+    // Logo
+    if(ov.mode==="logo"){
+      const lp=ov.logoPos;const lg=logoRef.current;
       if(lg){
-        const mw=W*(sc/100);const sf=Math.min(mw/lg.width,(H*0.8)/lg.height);
+        const mw=W*(lp.s/100);const sf=Math.min(mw/lg.width,(H*0.8)/lg.height);
         const lw=lg.width*sf,lh=lg.height*sf;
-        const lx_=W*x/100-lw/2,ly_=H*y/100-lh/2;
+        const lx_=W*lp.x/100-lw/2,ly_=H*lp.y/100-lh/2;
         ctx.drawImage(lg,lx_,ly_,lw,lh);
-        if(showGuide){
-          ctx.save();
-          ctx.strokeStyle="rgba(124,58,237,0.9)";ctx.lineWidth=Math.max(2,W*0.004);
-          ctx.setLineDash([W*0.012,W*0.008]);ctx.strokeRect(lx_-4,ly_-4,lw+8,lh+8);ctx.setLineDash([]);
-          const hs=Math.max(6,W*0.018);
-          [[lx_-4,ly_-4],[lx_+lw+4-hs,ly_-4],[lx_-4,ly_+lh+4-hs],[lx_+lw+4-hs,ly_+lh+4-hs]].forEach(([cx,cy])=>{ctx.fillStyle="rgba(124,58,237,1)";ctx.fillRect(cx,cy,hs,hs)});
-          ctx.restore();
-        }
+        guide(lx_,ly_,lw,lh,"logo");
       }
+    }
+
+    // Subline
+    if(ov.subline){
+      const sp=ov.subPos;const fs=Math.round(W*(ov.subSize/100)*0.08);
+      ctx.font=`400 ${fs}px 'Poppins',sans-serif`;ctx.fillStyle=ov.subColor;
+      ctx.textAlign="center";ctx.textBaseline="middle";
+      const words=ov.subline.split(" ");let lines=[],cur="";
+      words.forEach(w=>{const t2=cur?cur+" "+w:w;if(ctx.measureText(t2).width>W*0.82&&cur){lines.push(cur);cur=w}else cur=t2});
+      if(cur)lines.push(cur);
+      const totalH=lines.length*fs*1.5;const sx=W*sp.x/100;const sy=H*sp.y/100-totalH/2+fs/2;
+      lines.forEach((l,i)=>ctx.fillText(l,sx,sy+i*fs*1.5));
+      guide(sx-W*0.45,H*sp.y/100-totalH/2-4,W*0.9,totalH+8,"sub");
+      ctx.textAlign="left";ctx.textBaseline="alphabetic";
     }
   },[]);
 
@@ -329,7 +375,7 @@ function FlickApp(){
       const el=ts-startRef.current;const cnt=Math.max(bgs.length,1);
       const i=Math.floor(el/BG_MS)%cnt;
       if(i!==bgIdxRef.current){bgIdxRef.current=i;setCurBg(i)}
-      if(prevRef.current)drawFrame(prevRef.current,i,editMode);
+      if(prevRef.current)drawFrame(prevRef.current,i,activeElRef.current);
       animRef.current=requestAnimationFrame(loop);
     };
     animRef.current=requestAnimationFrame(loop);
@@ -337,38 +383,101 @@ function FlickApp(){
 
   useEffect(()=>{
     if(playing){startRef.current=null;bgIdxRef.current=0;runPreview()}
-    else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,editMode)},60)}
+    else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60)}
     return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)};
   },[playing,runPreview,drawFrame,editMode]);
 
   useEffect(()=>{
-    if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,editMode)},60);
-  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,drawFrame,playing]);
+    if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60);
+  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,drawFrame,playing]);
 
+  // Multi-element drag system
   useEffect(()=>{
-    const canvas=prevRef.current;const wrap=wrapRef.current;
-    if(!canvas||!wrap||!editMode)return;
+    const canvas=prevRef.current;if(!canvas||!editMode)return;
+    const ov=overlayRef.current;
     const dist=(t1,t2)=>Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
-    const onMouseDown=e=>{e.preventDefault();dragRef.current={active:true,startX:e.clientX,startY:e.clientY,startLx:posRef.current.x,startLy:posRef.current.y}};
+
+    // Hit test — which element was clicked?
+    const hitTest=(cx,cy,W,H)=>{
+      // Convert canvas-relative px to % 
+      const px=(cx/W)*100,py=(cy/H)*100;
+      const near=(ex,ey,r=8)=>Math.abs(px-ex)<r&&Math.abs(py-ey)<r;
+      if(ov.emoji&&near(ov.emojiPos.x,ov.emojiPos.y,10))return"emoji";
+      if(ov.mode==="text"&&ov.text&&near(ov.textPos.x,ov.textPos.y,15))return"text";
+      if(ov.mode==="logo"&&near(ov.logoPos.x,ov.logoPos.y,15))return"logo";
+      if(ov.subline&&near(ov.subPos.x,ov.subPos.y,12))return"sub";
+      return"logo"; // default
+    };
+
+    const updatePos=(el,nx,ny)=>{
+      nx=Math.max(2,Math.min(98,nx));ny=Math.max(2,Math.min(98,ny));
+      const ov2=overlayRef.current;
+      if(el==="logo"){const np={...ov2.logoPos,x:nx,y:ny};overlayRef.current={...ov2,logoPos:np};setLogoPos(np)}
+      else if(el==="text"){const np={...ov2.textPos,x:nx,y:ny};overlayRef.current={...ov2,textPos:np};setTextPos(np)}
+      else if(el==="sub"){const np={...ov2.subPos,x:nx,y:ny};overlayRef.current={...ov2,subPos:np};setSubPos(np)}
+      else if(el==="emoji"){const np={...ov2.emojiPos,x:nx,y:ny};overlayRef.current={...ov2,emojiPos:np};setEmojiPos(np)}
+    };
+
+    const onMouseDown=e=>{
+      e.preventDefault();
+      const r=canvas.getBoundingClientRect();
+      const cx=e.clientX-r.left,cy=e.clientY-r.top;
+      const el=hitTest(cx,cy,r.width,r.height);
+      activeElRef.current=el;setActiveEl(el);
+      dragRef.current={active:true,startX:e.clientX,startY:e.clientY,
+        startLx:overlayRef.current[el==="logo"?"logoPos":el==="text"?"textPos":el==="sub"?"subPos":"emojiPos"].x,
+        startLy:overlayRef.current[el==="logo"?"logoPos":el==="text"?"textPos":el==="sub"?"subPos":"emojiPos"].y};
+    };
     const onMouseMove=e=>{
       if(!dragRef.current.active)return;
       const r=canvas.getBoundingClientRect();
       const dx=((e.clientX-dragRef.current.startX)/r.width)*100;
       const dy=((e.clientY-dragRef.current.startY)/r.height)*100;
-      const nx=Math.max(0,Math.min(100,dragRef.current.startLx+dx));
-      const ny=Math.max(0,Math.min(100,dragRef.current.startLy+dy));
-      posRef.current={...posRef.current,x:nx,y:ny};setLx(Math.round(nx));setLy(Math.round(ny));
+      updatePos(activeElRef.current,dragRef.current.startLx+dx,dragRef.current.startLy+dy);
     };
     const onMouseUp=()=>{dragRef.current.active=false};
-    const onWheel=e=>{e.preventDefault();const ns=Math.max(5,Math.min(95,posRef.current.s+(e.deltaY>0?-2:2)));posRef.current={...posRef.current,s:ns};setLogoScale(Math.round(ns))};
+    const onWheel=e=>{
+      e.preventDefault();
+      const el=activeElRef.current||"logo";
+      const ov2=overlayRef.current;
+      const delta=e.deltaY>0?-2:2;
+      if(el==="logo"){const ns=Math.max(5,Math.min(95,ov2.logoPos.s+delta));const np={...ov2.logoPos,s:ns};overlayRef.current={...ov2,logoPos:np};setLogoPos(np);setLogoScale(ns)}
+      else if(el==="text"){setTextSize(v=>Math.max(10,Math.min(100,v+delta)))}
+      else if(el==="sub"){setSubSize(v=>Math.max(10,Math.min(80,v+delta)))}
+      else if(el==="emoji"){setEmojiSize(v=>Math.max(10,Math.min(90,v+delta)))}
+    };
     const onTouchStart=e=>{
-      if(e.touches.length===1){const t=e.touches[0];dragRef.current={active:true,startX:t.clientX,startY:t.clientY,startLx:posRef.current.x,startLy:posRef.current.y};pinchRef.current.active=false}
-      else if(e.touches.length===2){dragRef.current.active=false;pinchRef.current={active:true,startDist:dist(e.touches[0],e.touches[1]),startScale:posRef.current.s}}
+      if(e.touches.length===1){
+        const t=e.touches[0];const r=canvas.getBoundingClientRect();
+        const cx=t.clientX-r.left,cy=t.clientY-r.top;
+        const el=hitTest(cx,cy,r.width,r.height);
+        activeElRef.current=el;setActiveEl(el);
+        dragRef.current={active:true,startX:t.clientX,startY:t.clientY,
+          startLx:overlayRef.current[el==="logo"?"logoPos":el==="text"?"textPos":el==="sub"?"subPos":"emojiPos"].x,
+          startLy:overlayRef.current[el==="logo"?"logoPos":el==="text"?"textPos":el==="sub"?"subPos":"emojiPos"].y};
+        pinchRef.current.active=false;
+      }else if(e.touches.length===2){
+        dragRef.current.active=false;
+        pinchRef.current={active:true,startDist:dist(e.touches[0],e.touches[1]),
+          startScale:overlayRef.current[activeElRef.current==="text"?"textSize":activeElRef.current==="sub"?"subSize":activeElRef.current==="emoji"?"emojiSize":"logoPos"].s||overlayRef.current.logoPos.s};
+      }
     };
     const onTouchMove=e=>{
       e.preventDefault();
-      if(e.touches.length===1&&dragRef.current.active){const t=e.touches[0];const r=canvas.getBoundingClientRect();const dx=((t.clientX-dragRef.current.startX)/r.width)*100;const dy=((t.clientY-dragRef.current.startY)/r.height)*100;const nx=Math.max(0,Math.min(100,dragRef.current.startLx+dx));const ny=Math.max(0,Math.min(100,dragRef.current.startLy+dy));posRef.current={...posRef.current,x:nx,y:ny};setLx(Math.round(nx));setLy(Math.round(ny))}
-      else if(e.touches.length===2&&pinchRef.current.active){const d=dist(e.touches[0],e.touches[1]);const ns=Math.max(5,Math.min(95,pinchRef.current.startScale*d/pinchRef.current.startDist));posRef.current={...posRef.current,s:ns};setLogoScale(Math.round(ns))}
+      if(e.touches.length===1&&dragRef.current.active){
+        const t=e.touches[0];const r=canvas.getBoundingClientRect();
+        const dx=((t.clientX-dragRef.current.startX)/r.width)*100;
+        const dy=((t.clientY-dragRef.current.startY)/r.height)*100;
+        updatePos(activeElRef.current,dragRef.current.startLx+dx,dragRef.current.startLy+dy);
+      }else if(e.touches.length===2&&pinchRef.current.active){
+        const d=dist(e.touches[0],e.touches[1]);
+        const ratio2=d/pinchRef.current.startDist;
+        const el=activeElRef.current||"logo";
+        const ov2=overlayRef.current;
+        if(el==="logo"){const ns=Math.max(5,Math.min(95,pinchRef.current.startScale*ratio2));const np={...ov2.logoPos,s:ns};overlayRef.current={...ov2,logoPos:np};setLogoPos(np);setLogoScale(ns)}
+        else if(el==="text"){setTextSize(Math.max(10,Math.min(100,pinchRef.current.startScale*ratio2)))}
+        else if(el==="emoji"){setEmojiSize(Math.max(10,Math.min(90,pinchRef.current.startScale*ratio2)))}
+      }
     };
     const onTouchEnd=()=>{dragRef.current.active=false;pinchRef.current.active=false};
     canvas.addEventListener("mousedown",onMouseDown);
@@ -383,11 +492,13 @@ function FlickApp(){
 
   const framesPerBg=Math.round((BG_MS/1000)*FPS);
   const totalFrames=loops*bgs.length*framesPerBg;
-  const renderFn=useCallback((canvas,f)=>drawFrame(canvas,Math.floor(f/framesPerBg)%bgs.length,false),[drawFrame,framesPerBg,bgs.length]);
+  const renderFn=useCallback((canvas,f)=>drawFrame(canvas,Math.floor(f/framesPerBg)%bgs.length,null),[drawFrame,framesPerBg,bgs.length]);
   const{run,download,prog,exporting,blob,setBlob}=useExport(renderFn,totalFrames,`flick-${ratio}-${loops}x.webm`);
 
   const dur=((bgs.length*loops*BG_MS)/1000).toFixed(1);
   const canExp=(overlayMode==="text"?textLine.trim().length>0:!!logo)&&bgs.length>0&&!exporting;
+  // Keep logoScale in sync with logoPos.s for slider display
+  useEffect(()=>{setLogoPos(p=>({...p,s:logoScale}))},[logoScale]);
   const R2=RATIOS.find(r=>r.key===ratio);
   const pw=Math.min(window.innerWidth-32,280);
   const ph=Math.round(pw*R2.h/R2.w);
@@ -432,6 +543,7 @@ function FlickApp(){
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
 
       {/* Content card */}
+      {/* Content card */}
       <div style={card}>
         <div style={{...secTitle,color:C.purple}}>
           <span style={{width:6,height:6,borderRadius:"50%",background:C.purple,flexShrink:0,display:"inline-block"}}/>
@@ -442,30 +554,85 @@ function FlickApp(){
             ))}
           </div>
         </div>
-        {overlayMode==="logo"?(
+        {/* Logo upload */}
+        {overlayMode==="logo"&&(
           <>
             <DZ id="fl-logo" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setLogo(d);setBlob(null)}} dragColor="rgba(124,58,237,0.7)">
               {logo?<div style={{display:"flex",alignItems:"center",gap:12,padding:"4px 0"}}><img src={logo} style={{maxWidth:80,maxHeight:48,objectFit:"contain",filter:"drop-shadow(0 0 10px rgba(124,58,237,0.5))"}} alt=""/><div><div style={{fontSize:12,color:"#c4b5fd",fontWeight:600}}>Logo uploaded</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>Click to replace</div></div></div>:<><div style={{fontSize:22,opacity:0.2,marginBottom:5}}>⊕</div><div style={{fontSize:13,color:"#9ca3af"}}>Drop or click — PNG / SVG</div><div style={{fontSize:10,color:"#4b5563",marginTop:2}}>Transparent background recommended</div></>}
             </DZ>
-            {logo&&<div style={{marginTop:10,display:"flex",flexDirection:"column",gap:8}}>
-              <button onClick={()=>{setEditMode(p=>!p);setPlaying(false)}} style={{width:"100%",padding:"9px",borderRadius:8,border:"1px solid",borderColor:editMode?"rgba(124,58,237,0.6)":"rgba(255,255,255,0.1)",background:editMode?"rgba(124,58,237,0.15)":"rgba(255,255,255,0.03)",color:editMode?"#c4b5fd":"#9ca3af",fontSize:12,fontWeight:700,cursor:"pointer"}}>
-                {editMode?"✓ Done positioning":"✥ Move & resize on preview →"}
-              </button>
-              <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Size</span>
-                <input type="range" min="5" max="95" value={logoScale} onChange={e=>{const v=Number(e.target.value);setLogoScale(v);posRef.current={...posRef.current,s:v}}}/>
-                <span style={{fontSize:10,color:"#9ca3af",flexShrink:0,width:28,textAlign:"right"}}>{logoScale}%</span>
-                <button onClick={()=>{setLx(50);setLy(50);setLogoScale(55);posRef.current={x:50,y:50,s:55}}} style={{fontSize:10,background:"none",border:"none",color:C.purple,cursor:"pointer",fontWeight:700,flexShrink:0}}>Reset</button>
-              </div>
+            {logo&&<div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
+              <span style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Size</span>
+              <input type="range" min="5" max="95" value={logoScale} onChange={e=>{setLogoScale(Number(e.target.value));setBlob(null)}}/>
+              <span style={{fontSize:10,color:"#9ca3af",flexShrink:0,width:26,textAlign:"right"}}>{logoScale}%</span>
             </div>}
           </>
-        ):(
+        )}
+        {/* Text headline */}
+        {overlayMode==="text"&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
             <input value={textLine} onChange={e=>{setTextLine(e.target.value);setBlob(null)}} placeholder="YOUR BRAND" style={{width:"100%",padding:"11px 13px",borderRadius:9,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"#ffffff",fontSize:16,fontWeight:800,outline:"none",letterSpacing:"0.02em",fontFamily:ff(textFont)}}/>
             <FontColorPicker font={textFont} setFont={f=>{setTextFont(f);setBlob(null)}} color={textColor} setColor={c=>{setTextColor(c);setBlob(null)}} accent={C.purple}/>
-            <div><div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}><span style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase"}}>Text Size</span><span style={{fontSize:10,color:"#9ca3af"}}>{textSize}%</span></div><input type="range" min="20" max="100" value={textSize} onChange={e=>{setTextSize(Number(e.target.value));setBlob(null)}}/></div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Size</span><input type="range" min="10" max="100" value={textSize} onChange={e=>{setTextSize(Number(e.target.value));setBlob(null)}}/><span style={{fontSize:10,color:"#9ca3af",flexShrink:0,width:26,textAlign:"right"}}>{textSize}%</span></div>
           </div>
         )}
+      </div>
+
+      {/* Subline card */}
+      <div style={card}>
+        <div style={{...secTitle,color:"#8b5cf6",marginBottom:showSubline?12:0}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"#8b5cf6",flexShrink:0,display:"inline-block"}}/>
+          Subline
+          <span style={{fontSize:8,color:"#6b7280",fontWeight:500,marginLeft:2}}>optional</span>
+          <button onClick={()=>{setShowSubline(p=>!p);setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:showSubline?"rgba(139,92,246,0.5)":"rgba(255,255,255,0.1)",background:showSubline?"rgba(139,92,246,0.15)":"rgba(255,255,255,0.03)",color:showSubline?"#c4b5fd":"#9ca3af",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+            {showSubline?"✓ On":"+ Add"}
+          </button>
+        </div>
+        {showSubline&&(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <input value={subline} onChange={e=>{setSubline(e.target.value);setBlob(null)}} placeholder="Your tagline or description..." style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none",fontFamily:"'Poppins',sans-serif"}}/>
+            <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
+              <span style={{fontSize:9,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Colour</span>
+              {["#ffffff","#e8e8f2","#9ca3af","#fbbf24","#ec4899","#7c3aed","#0ea5e9","#10b981"].map(c=>(
+                <button key={c} onClick={()=>{setSubColor(c);setBlob(null)}} style={{width:18,height:18,borderRadius:4,background:c,border:"none",cursor:"pointer",outline:subColor===c?"2px solid #a78bfa":"2px solid transparent",outlineOffset:1,flexShrink:0}}/>
+              ))}
+              <input type="color" value={subColor} onChange={e=>{setSubColor(e.target.value);setBlob(null)}} style={{width:26,height:22,border:"none",background:"none",cursor:"pointer",padding:0,borderRadius:4,flexShrink:0}}/>
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:9,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Size</span><input type="range" min="10" max="80" value={subSize} onChange={e=>{setSubSize(Number(e.target.value));setBlob(null)}}/><span style={{fontSize:9,color:"#9ca3af",flexShrink:0,width:24,textAlign:"right"}}>{subSize}%</span></div>
+          </div>
+        )}
+      </div>
+
+      {/* Emoji card */}
+      <div style={card}>
+        <div style={{...secTitle,color:"#f59e0b",marginBottom:showEmoji?12:0}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",flexShrink:0,display:"inline-block"}}/>
+          Emoji
+          <span style={{fontSize:8,color:"#6b7280",fontWeight:500,marginLeft:2}}>optional</span>
+          <button onClick={()=>{setShowEmoji(p=>!p);if(showEmoji)setEmoji("");setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:showEmoji?"rgba(245,158,11,0.5)":"rgba(255,255,255,0.1)",background:showEmoji?"rgba(245,158,11,0.15)":"rgba(255,255,255,0.03)",color:showEmoji?"#fcd34d":"#9ca3af",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+            {showEmoji?"✓ On":"+ Add"}
+          </button>
+        </div>
+        {showEmoji&&(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            <input value={emoji} onChange={e=>{setEmoji(e.target.value);setBlob(null)}} placeholder="Paste or pick emoji" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:22,outline:"none"}} maxLength={8}/>
+            <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
+              {["🔥","⚡","🚀","💥","🎯","✨","💎","👑","🏆","🎉","💰","⭐","🌟","🎪","🔑","💫"].map(e2=>(
+                <button key={e2} onClick={()=>{setEmoji(e2);setBlob(null)}} style={{width:32,height:32,borderRadius:7,background:emoji===e2?"rgba(245,158,11,0.2)":"rgba(255,255,255,0.04)",border:`1px solid ${emoji===e2?"rgba(245,158,11,0.5)":"rgba(255,255,255,0.08)"}`,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{e2}</button>
+              ))}
+            </div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:9,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Size</span><input type="range" min="10" max="90" value={emojiSize} onChange={e=>{setEmojiSize(Number(e.target.value));setBlob(null)}}/><span style={{fontSize:9,color:"#9ca3af",flexShrink:0,width:24,textAlign:"right"}}>{emojiSize}%</span></div>
+          </div>
+        )}
+      </div>
+
+      {/* Edit mode card */}
+      <div style={{...card,borderColor:editMode?"rgba(124,58,237,0.4)":"rgba(255,255,255,0.08)",background:editMode?"rgba(124,58,237,0.06)":"rgba(255,255,255,0.03)"}}>
+        <div style={{fontSize:11,color:editMode?"#c4b5fd":"#9ca3af",marginBottom:8,lineHeight:1.5}}>
+          {editMode?<><strong style={{color:"#a78bfa"}}>Edit mode on</strong> — tap the preview to select an element, then drag to reposition. Scroll/pinch to resize.<br/>{activeEl&&<span style={{fontSize:10,marginTop:2,display:"block"}}>Selected: <strong style={{color:"#c4b5fd",textTransform:"capitalize"}}>{activeEl==="sub"?"subline":activeEl}</strong></span>}</>:"Tap items directly on the preview to move them."}
+        </div>
+        <button onClick={()=>{setEditMode(p=>!p);setPlaying(false);setActiveEl(null);activeElRef.current=null}} style={{width:"100%",padding:"9px",borderRadius:8,border:"1px solid",borderColor:editMode?"rgba(124,58,237,0.5)":"rgba(255,255,255,0.1)",background:editMode?"rgba(124,58,237,0.15)":"rgba(255,255,255,0.03)",color:editMode?"#c4b5fd":"#9ca3af",fontSize:12,fontWeight:700,cursor:"pointer"}}>
+          {editMode?"✓ Done — exit edit mode":"✥ Enter edit mode"}
+        </button>
       </div>
 
       {/* Backgrounds card */}
