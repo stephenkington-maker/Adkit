@@ -18,6 +18,18 @@ input[type=range]{accent-color:#7c3aed;cursor:pointer;width:100%}
 ::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:3px}
 @keyframes pulseGreen{0%,100%{box-shadow:0 0 16px rgba(52,211,153,0.15)}50%{box-shadow:0 0 28px rgba(52,211,153,0.4)}}
 @keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.app-layout{display:flex;flex-direction:column;width:100%}
+@media(min-width:900px){
+  .app-layout{flex-direction:row;height:calc(100vh - 100px);overflow:hidden}
+  .app-preview{flex:0 0 60%;overflow-y:auto;padding:24px 20px 24px 32px;border-right:1px solid rgba(255,255,255,0.08)}
+  .app-tools{flex:0 0 40%;overflow-y:auto;padding:24px 32px 24px 20px}
+  .app-preview canvas{max-height:calc(100vh - 150px);width:auto !important;height:calc(100vh - 150px) !important;object-fit:contain}
+  .preview-wrap{height:calc(100vh - 180px) !important;width:auto !important;aspect-ratio:var(--preview-ratio)}
+}
+@media(max-width:899px){
+  .app-preview{padding:16px}
+  .app-tools{padding:16px}
+}
 .animated-gradient{background:linear-gradient(90deg,#7c3aed,#c026d3,#ec4899,#f97316,#ec4899,#c026d3,#7c3aed);background-size:300% 300%;animation:gradientShift 4s ease infinite;}
 </style>
 </head>
@@ -166,7 +178,7 @@ function PreviewCanvas({canvasRef,W,H,empty,emptyIcon,emptyText}){
   const pw=Math.min(window.innerWidth-32,280);
   const ph=Math.round(pw*H/W);
   return(
-    <div style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.07),0 16px 48px rgba(0,0,0,0.7)",background:"#111118",width:pw,height:ph,flexShrink:0,alignSelf:"center"}}>
+    <div style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.07),0 16px 48px rgba(0,0,0,0.7)",background:"#22223a",width:pw,height:ph,flexShrink:0,alignSelf:"center"}}>
       <canvas ref={canvasRef} width={W} height={H} style={{width:pw,height:ph,display:"block"}}/>
       {empty&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:26,opacity:0.1}}>{emptyIcon}</div><p style={{fontSize:11,color:"#4b5563",margin:0,textAlign:"center",padding:"0 16px"}}>{emptyText}</p></div>}
     </div>
@@ -377,13 +389,8 @@ function FlickApp(){
   const dur=((bgs.length*loops*BG_MS)/1000).toFixed(1);
   const canExp=(overlayMode==="text"?textLine.trim().length>0:!!logo)&&bgs.length>0&&!exporting;
   const R2=RATIOS.find(r=>r.key===ratio);
-  const availH=window.innerHeight-100;
-  const availW=isDesktop?Math.round(window.innerWidth*0.6)-40:window.innerWidth-32;
-  const byH=Math.round(availH*R2.w/R2.h);
-  const byW=availW;
-  const finalPw=isDesktop?Math.min(byH,byW):Math.min(byW,280);
-  const finalPh=Math.round(finalPw*R2.h/R2.w);
-  const pw=finalPw;const ph=finalPh;
+  const pw=Math.min(window.innerWidth-32,280);
+  const ph=Math.round(pw*R2.h/R2.w);
 
   // Shared card style for settings groups
   const card={background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"};
@@ -404,8 +411,8 @@ function FlickApp(){
         </div>
       </div>
       {/* Canvas */}
-      <div ref={wrapRef} style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.7)":"rgba(255,255,255,0.08)"},0 20px 60px rgba(0,0,0,0.8)`,background:"#22223a",width:finalPw,height:finalPh,flexShrink:0,alignSelf:isDesktop?"flex-start":"center",cursor:editMode?"move":"default",touchAction:editMode?"none":"auto",transition:"box-shadow 0.2s",maxWidth:"100%"}}>
-        <canvas ref={prevRef} width={R2.w} height={R2.h} style={{width:finalPw,height:finalPh,display:"block",userSelect:"none",maxWidth:"100%"}}/>
+      <div ref={wrapRef} style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.7)":"rgba(255,255,255,0.08)"},0 20px 60px rgba(0,0,0,0.8)`,background:"#0d0d15",width:pw,height:ph,flexShrink:0,alignSelf:"center",cursor:editMode?"move":"default",touchAction:editMode?"none":"auto",transition:"box-shadow 0.2s",maxWidth:"100%"}}>
+        <canvas ref={prevRef} width={R2.w} height={R2.h} style={{width:pw,height:ph,display:"block",userSelect:"none",maxWidth:"100%"}}/>
         {(!logo&&bgs.length===0&&overlayMode==="logo")&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,background:"rgba(9,9,16,0.94)"}}><div style={{fontSize:36,opacity:0.08}}>⚡</div><p style={{fontSize:12,color:"#4b5563",margin:0,textAlign:"center",padding:"0 20px",lineHeight:1.6}}>Upload a logo and add background images to preview</p></div>}
         {editMode&&<div style={{position:"absolute",bottom:10,left:0,right:0,display:"flex",justifyContent:"center",pointerEvents:"none"}}><div style={{background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",borderRadius:99,padding:"5px 14px",fontSize:10,color:"rgba(255,255,255,0.75)",fontWeight:600,letterSpacing:"0.03em"}}>drag to move · scroll or pinch to resize</div></div>}
       </div>
@@ -519,15 +526,17 @@ function FlickApp(){
   );
 
   return isDesktop?(
-    // ── Desktop: preview left (60%), settings right (40%) ──
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
-      {/* Left — preview (60%) */}
-      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>
+    // ── Desktop: preview left, settings right ──
+    <div style={{display:"flex",gap:0,height:"calc(100vh - 98px)",overflow:"hidden"}}>
+      {/* Left — preview */}
+      <div style={{flex:"0 0 auto",width:"42%",minWidth:320,maxWidth:520,padding:"24px 20px 24px 28px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.06)"}}>
         {previewPanel}
       </div>
-      {/* Right — settings (40%) */}
-      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto",display:"flex",flexDirection:"column",gap:0}}>
-        {settingsPanel}
+      {/* Right — settings */}
+      <div style={{flex:1,padding:"24px 28px 24px 20px",overflowY:"auto",display:"flex",flexDirection:"column",gap:0}}>
+        <div style={{maxWidth:480}}>
+          {settingsPanel}
+        </div>
       </div>
     </div>
   ):(
@@ -603,75 +612,8 @@ function ProofApp(){
   const save=()=>{if(editIdx===null)return;const n=[...items];n[editIdx]={...editBuf};setItems(n);setEditIdx(null);setBlob(null)};
   const IS={width:"100%",padding:"8px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:12,outline:"none",marginTop:4};
   const curSlide=Math.floor(curFrame/SLIDE_FRAMES);
-  const isDesktop=window.innerWidth>=900;
-  const PW=675,PH=1200;
-  const prevW=isDesktop?Math.round(Math.min((window.innerHeight-100),(window.innerWidth*0.6-40))*PW/PH):Math.min(window.innerWidth-32,280);
-  const prevH=Math.round(prevW*PH/PW);
-
-  const proofPreview=(
-    <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <span style={{fontSize:12,fontWeight:700,color:"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>Preview</span>
-        <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.blue}/>
-      </div>
-      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#22223a",width:prevW,height:prevH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
-        <canvas ref={prevRef} width={PW} height={PH} style={{width:prevW,height:prevH,display:"block"}}/>
-        {!items.length&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>★</div><p style={{fontSize:11,color:"#4b5563",margin:0}}>Add testimonials to preview</p></div>}
-      </div>
-      <div style={{display:"flex",gap:4,justifyContent:"center"}}>{items.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:curSlide===i&&playing?"#0ea5e9":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>
-      {isDesktop&&<div style={{marginTop:4}}><ExportArea disabled={!items.length||exporting} onRender={()=>run(PW,PH)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>{!items.length&&<Hint>Add at least one testimonial</Hint>}</div>}
-    </div>
-  );
-
-  const proofSettings=(
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:C.blue,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:C.blue,display:"inline-block"}}/>Testimonials ({items.length})</div>
-        <div style={{display:"flex",flexDirection:"column",gap:5}}>
-          {items.map((t,i)=>(
-            <div key={i} onClick={()=>{setEditIdx(i);setEditBuf({...t})}} style={{padding:"10px 12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.07)",background:"rgba(255,255,255,0.02)",cursor:"pointer",display:"flex",gap:8,alignItems:"flex-start"}}>
-              <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,color:"#e8e8f2",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.text.replace(/\*\*/g,"")}</div><div style={{fontSize:9,color:"#6b7280",marginTop:2}}>{"★".repeat(t.stars||5)} · {t.author}</div></div>
-              <button onClick={e=>{e.stopPropagation();setItems(p=>p.filter((_,j)=>j!==i));setBlob(null)}} style={{background:"none",border:"none",color:"#6b7280",cursor:"pointer",fontSize:12,flexShrink:0}}>✕</button>
-            </div>
-          ))}
-          <button onClick={()=>setItems(p=>[...p,{text:"**Amazing** — totally changed how I work.",author:"New Reviewer",handle:"@handle",stars:5}])} style={{padding:"10px",borderRadius:9,border:"1px dashed rgba(255,255,255,0.12)",background:"none",color:"#9ca3af",cursor:"pointer",fontSize:12,fontWeight:600}}>+ Add testimonial</button>
-        </div>
-        <p style={{fontSize:10,color:"#6b7280",marginTop:8,lineHeight:1.5}}>Tap to edit. Wrap <strong style={{color:"#fbbf24"}}>**words**</strong> to highlight.</p>
-      </div>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#8b5cf6",marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:"#8b5cf6",display:"inline-block"}}/>Style</div>
-        <div style={{display:"flex",gap:6}}>{PROOF_TMPLS.map(t=><Pill key={t.k} active={tmpl===t.k} onClick={()=>{setTmpl(t.k);setBlob(null);setTimeout(()=>drawPrev(0),60)}}>{t.k.charAt(0).toUpperCase()+t.k.slice(1)}</Pill>)}</div>
-      </div>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a78bfa",marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:"#a78bfa",display:"inline-block"}}/>Font & Colour</div>
-        <FontColorPicker font={proofFont} setFont={f=>{setProofFont(f);setBlob(null)}} color={proofColor} setColor={c=>{setProofColor(c);setBlob(null)}} accent={C.blue}/>
-      </div>
-      {editIdx!==null&&(
-        <div style={{padding:"14px",borderRadius:12,border:"1px solid rgba(14,165,233,0.3)",background:"rgba(14,165,233,0.06)"}}>
-          <div style={{fontSize:11,fontWeight:800,color:C.blue,marginBottom:10,letterSpacing:"0.05em"}}>EDITING TESTIMONIAL</div>
-          <div style={{fontSize:10,color:"#6b7280"}}>Review text — wrap **words** to highlight</div>
-          <textarea value={editBuf.text} onChange={e=>setEditBuf(b=>({...b,text:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"#e8e8f2",fontSize:12,outline:"none",marginTop:4,minHeight:70,resize:"vertical",fontFamily:"inherit"}}/>
-          <div style={{fontSize:10,color:"#6b7280",marginTop:7}}>Author</div><input value={editBuf.author} onChange={e=>setEditBuf(b=>({...b,author:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"#e8e8f2",fontSize:12,outline:"none",marginTop:4}}/>
-          <div style={{fontSize:10,color:"#6b7280",marginTop:5}}>Handle</div><input value={editBuf.handle} onChange={e=>setEditBuf(b=>({...b,handle:e.target.value}))} style={{width:"100%",padding:"8px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"#e8e8f2",fontSize:12,outline:"none",marginTop:4}}/>
-          <div style={{display:"flex",justifyContent:"space-between",marginTop:7,marginBottom:3}}><span style={{fontSize:10,color:"#6b7280"}}>Stars</span><span style={{fontSize:10,color:"#fbbf24"}}>{"★".repeat(editBuf.stars)}</span></div>
-          <input type="range" min="1" max="5" value={editBuf.stars} onChange={e=>setEditBuf(b=>({...b,stars:Number(e.target.value)}))} style={{accentColor:"#fbbf24",width:"100%"}}/>
-          <div style={{display:"flex",gap:6,marginTop:10}}>
-            <button onClick={save} style={{flex:1,padding:"9px",borderRadius:8,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",border:"none",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Save</button>
-            <button onClick={()=>setEditIdx(null)} style={{flex:1,padding:"9px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:"#6b7280",fontSize:12,cursor:"pointer"}}>Cancel</button>
-          </div>
-        </div>
-      )}
-      {!isDesktop&&<div><ExportArea disabled={!items.length||exporting} onRender={()=>run(PW,PH)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>{!items.length&&<Hint>Add at least one testimonial</Hint>}</div>}
-    </div>
-  );
-
-  return isDesktop?(
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
-      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>{proofPreview}</div>
-      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto"}}>{proofSettings}</div>
-    </div>
-  ):(
-    <div style={{display:"flex",flexDirection:"column",gap:16,padding:"20px 16px 60px"}}>
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
       <div>
         <SLabel n="01" title={`Testimonials (${items.length})`} color={C.blue}/>
         <div style={{display:"flex",flexDirection:"column",gap:5}}>
@@ -705,7 +647,11 @@ function ProofApp(){
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>Preview</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.blue}/></div>
         <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!items.length} emptyIcon="★" emptyText="Add testimonials to preview"/>
+        <div style={{display:"flex",gap:3,justifyContent:"center"}}>{items.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:curSlide===i&&playing?"#0ea5e9":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>
       </div>
+      <ExportArea disabled={!items.length||exporting} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+      {!items.length&&<Hint>Add at least one testimonial</Hint>}
+    </div>
   );
 }
 
@@ -759,29 +705,8 @@ function HookApp(){
   useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[name,img,sel,hookFont,hookColor,drawPrev,playing]);
   const toggle=id=>{setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n});setBlob(null)};
   const canExp=active.length>0&&name.trim().length>0&&!exporting;
-  const isDesktop=window.innerWidth>=900;
-  const hPW=isDesktop?Math.round(Math.min((window.innerHeight-100),(window.innerWidth*0.6-40))*675/1200):Math.min(window.innerWidth-32,280);
-  const hPH=Math.round(hPW*1200/675);
-
-  const hookPreview=(
-    <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <span style={{fontSize:12,fontWeight:700,color:"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>Hook {actH+1} / {active.length}</span>
-        <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.amber}/>
-      </div>
-      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#22223a",width:hPW,height:hPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
-        <canvas ref={prevRef} width={675} height={1200} style={{width:hPW,height:hPH,display:"block"}}/>
-        {!active.length&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>🎣</div><p style={{fontSize:11,color:"#4b5563",margin:0}}>Select hooks to preview</p></div>}
-      </div>
-      <div style={{display:"flex",gap:4,justifyContent:"center"}}>{active.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:actH===i&&playing?"#f59e0b":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>
-      {isDesktop&&<div style={{marginTop:4}}><ExportArea disabled={!canExp} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${active.length} Hook Ads .webm`}/>{!name.trim()&&<Hint>Enter a product name</Hint>}{name.trim()&&sel.size===0&&<Hint>Select at least one hook</Hint>}</div>}
-    </div>
-  );
-
-  if(isDesktop) return(
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
-      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>{hookPreview}</div>
-      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
       <div>
         <SLabel n="01" title="Product Image" color={C.amber} opt/>
         <DZ id="hk-img" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setImg(d)}} dragColor="rgba(245,158,11,0.7)" compact>
@@ -804,12 +729,8 @@ function HookApp(){
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>Hook {actH+1} / {active.length}</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.amber}/></div>
         <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!active.length} emptyIcon="🎣" emptyText="Select hooks to preview"/>
-        </div>
-    </div>
-  );
-  return(
-    <div style={{display:"flex",flexDirection:"column",gap:16,padding:"20px 16px 60px"}}>
-      {hookPreview}
+        <div style={{display:"flex",gap:3,justifyContent:"center"}}>{active.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:actH===i&&playing?"#f59e0b":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>
+      </div>
       <ExportArea disabled={!canExp} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${active.length} Hook Ads .webm`}/>
       {!name.trim()&&<Hint>Enter a product name to continue</Hint>}
       {name.trim()&&sel.size===0&&<Hint>Select at least one hook</Hint>}
@@ -848,9 +769,6 @@ function RevealApp(){
   useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(0),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
   useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[before,after,style,revFont,revColor,drawPrev,playing]);
   const canExp=before&&after&&!exporting;
-  const isDesktop=window.innerWidth>=900;
-  const rPW=isDesktop?Math.round(Math.min((window.innerHeight-100),(window.innerWidth*0.6-40))*675/1200):Math.min(window.innerWidth-32,280);
-  const rPH=Math.round(rPW*1200/675);
   const ImgBox=({id,label,value,setter})=>(
     <div style={{flex:1}}><div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,textAlign:"center"}}>{label}</div>
       <DZ id={id} accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setter(d);setBlob(null)}} dragColor="rgba(16,185,129,0.6)" compact>
@@ -858,45 +776,27 @@ function RevealApp(){
       </DZ>
     </div>
   );
-  const revealSettings=(
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:C.emerald,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:C.emerald,display:"inline-block"}}/>Before & After</div>
-        <div style={{display:"flex",gap:8}}><ImgBox id="rv-b" label="Before" value={before} setter={setBefore}/><ImgBox id="rv-a" label="After" value={after} setter={setAfter}/></div>
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+      <div><SLabel n="01" title="Before & After" color={C.emerald}/><div style={{display:"flex",gap:8,marginTop:0}}><ImgBox id="rv-b" label="Before" value={before} setter={setBefore}/><ImgBox id="rv-a" label="After" value={after} setter={setAfter}/></div></div>
+      <div>
+        <SLabel n="02" title="Reveal Style" color={C.emerald}/>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {REVEAL_STYLES.map(s=>(
+            <button key={s.id} onClick={()=>{setStyle(s.id);setBlob(null)}} style={{padding:"11px 13px",borderRadius:9,border:"1px solid",borderColor:style===s.id?"rgba(16,185,129,0.5)":"rgba(255,255,255,0.07)",background:style===s.id?"rgba(16,185,129,0.1)":"rgba(255,255,255,0.02)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.14s"}}>
+              <span style={{fontSize:13,fontWeight:700,color:style===s.id?"#6ee7b7":C.text}}>{s.label}</span><span style={{fontSize:10,color:C.muted}}>{s.desc}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:C.emerald,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:C.emerald,display:"inline-block"}}/>Reveal Style</div>
-        <div style={{display:"flex",flexDirection:"column",gap:5}}>{REVEAL_STYLES.map(s=>(<button key={s.id} onClick={()=>{setStyle(s.id);setBlob(null)}} style={{padding:"11px 13px",borderRadius:9,border:"1px solid",borderColor:style===s.id?"rgba(16,185,129,0.5)":"rgba(255,255,255,0.07)",background:style===s.id?"rgba(16,185,129,0.1)":"rgba(255,255,255,0.02)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.14s"}}><span style={{fontSize:13,fontWeight:700,color:style===s.id?"#6ee7b7":C.text}}>{s.label}</span><span style={{fontSize:10,color:C.muted}}>{s.desc}</span></button>))}</div>
+      <div><SLabel n="03" title="Font & Colour" color={C.emerald}/><FontColorPicker font={revFont} setFont={f=>{setRevFont(f);setBlob(null)}} color={revColor} setColor={c=>{setRevColor(c);setBlob(null)}} accent={C.emerald}/></div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>{REVEAL_STYLES.find(s=>s.id===style)?.label} · 3s</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.emerald}/></div>
+        <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!before||!after} emptyIcon="✦" emptyText="Upload before & after images"/>
       </div>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a78bfa",marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:"#a78bfa",display:"inline-block"}}/>Font & Colour</div>
-        <FontColorPicker font={revFont} setFont={f=>{setRevFont(f);setBlob(null)}} color={revColor} setColor={c=>{setRevColor(c);setBlob(null)}} accent={C.emerald}/>
-      </div>
-      {!isDesktop&&<div><ExportArea disabled={!canExp} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${REVEAL_STYLES.find(s=>s.id===style)?.label} Reveal .webm`}/>{!before&&<Hint>Upload a before image</Hint>}{before&&!after&&<Hint>Upload an after image</Hint>}</div>}
-    </div>
-  );
-  const revealPreview=(
-    <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <span style={{fontSize:12,fontWeight:700,color:"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>{REVEAL_STYLES.find(s=>s.id===style)?.label} · 3s</span>
-        <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.emerald}/>
-      </div>
-      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#22223a",width:rPW,height:rPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
-        <canvas ref={prevRef} width={675} height={1200} style={{width:rPW,height:rPH,display:"block"}}/>
-        {(!before||!after)&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>✦</div><p style={{fontSize:11,color:"#4b5563",margin:0}}>Upload before and after images</p></div>}
-      </div>
-      {isDesktop&&<div style={{marginTop:4}}><ExportArea disabled={!canExp} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${REVEAL_STYLES.find(s=>s.id===style)?.label} Reveal .webm`}/>{!before&&<Hint>Upload a before image</Hint>}{before&&!after&&<Hint>Upload an after image</Hint>}</div>}
-    </div>
-  );
-  return isDesktop?(
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
-      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>{revealPreview}</div>
-      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto"}}>{revealSettings}</div>
-    </div>
-  ):(
-    <div style={{display:"flex",flexDirection:"column",gap:16,padding:"20px 16px 60px"}}>
-      {revealSettings}
-      {revealPreview}
+      <ExportArea disabled={!canExp} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${REVEAL_STYLES.find(s=>s.id===style)?.label} Reveal .webm`}/>
+      {!before&&<Hint>Upload a before image to start</Hint>}
+      {before&&!after&&<Hint>Upload an after image</Hint>}
     </div>
   );
 }
@@ -937,62 +837,40 @@ function DropApp(){
   useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(SF),60)},[img,orig,sale,headline,style,dropFont,dropColor,drawPrev,playing]);
   const disc=orig&&sale?Math.round((1-Number(sale)/Number(orig))*100):null;
   const IS={width:"100%",padding:"9px 11px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none",marginTop:5};
-  const isDesktop=window.innerWidth>=900;
-  const dPW=isDesktop?Math.round(Math.min((window.innerHeight-100),(window.innerWidth*0.6-40))*675/1200):Math.min(window.innerWidth-32,280);
-  const dPH=Math.round(dPW*1200/675);
-  const dropSettings=(
-    <div style={{display:"flex",flexDirection:"column",gap:14}}>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:C.red,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:C.red,display:"inline-block"}}/>Product Image <span style={{fontSize:8,color:"#6b7280",fontWeight:500,marginLeft:4}}>optional</span></div>
+  return(
+    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+      <div>
+        <SLabel n="01" title="Product Image" color={C.red} opt/>
         <DZ id="dp-img" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setImg(d);setBlob(null)}} dragColor="rgba(239,68,68,0.7)" compact>
           {img?<img src={img} style={{width:"100%",height:80,objectFit:"cover",borderRadius:7}} alt=""/>:<><div style={{fontSize:16,opacity:0.25,marginBottom:2}}>📦</div><div style={{fontSize:13,color:C.muted}}>Drop product image</div></>}
         </DZ>
       </div>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:C.red,marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:C.red,display:"inline-block"}}/>Pricing{disc&&disc>0?` · ${disc}% off`:""}</div>
+      <div>
+        <SLabel n="02" title={`Pricing${disc&&disc>0?` · ${disc}% off`:""}`} color={C.red}/>
         <div style={{display:"flex",gap:8}}>
-          <div style={{flex:1}}><div style={{fontSize:9,color:"#9ca3af",fontWeight:600,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:4}}>Original $</div><input type="number" value={orig} onChange={e=>{setOrig(e.target.value);setBlob(null)}} style={IS} placeholder="99"/></div>
-          <div style={{flex:1}}><div style={{fontSize:9,color:C.red,fontWeight:600,letterSpacing:"0.07em",textTransform:"uppercase",marginBottom:4}}>Sale $</div><input type="number" value={sale} onChange={e=>{setSale(e.target.value);setBlob(null)}} style={{...IS,borderColor:"rgba(239,68,68,0.3)"}} placeholder="49"/></div>
+          <div style={{flex:1}}><div style={{fontSize:9,color:C.muted,fontWeight:600,letterSpacing:"0.07em",textTransform:"uppercase"}}>Original $</div><input type="number" value={orig} onChange={e=>{setOrig(e.target.value);setBlob(null)}} style={IS} placeholder="99"/></div>
+          <div style={{flex:1}}><div style={{fontSize:9,color:C.red,fontWeight:600,letterSpacing:"0.07em",textTransform:"uppercase"}}>Sale $</div><input type="number" value={sale} onChange={e=>{setSale(e.target.value);setBlob(null)}} style={{...IS,borderColor:"rgba(239,68,68,0.3)"}} placeholder="49"/></div>
         </div>
-        {disc&&disc>0&&<div style={{marginTop:8,padding:"7px 12px",borderRadius:8,background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.25)",fontSize:12,fontWeight:800,color:"#f87171",textAlign:"center"}}>{disc}% off · Save ${(Number(orig)-Number(sale)).toFixed(0)}</div>}
+        {disc&&disc>0&&<div style={{marginTop:7,padding:"7px 12px",borderRadius:8,background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.25)",fontSize:12,fontWeight:800,color:"#f87171",textAlign:"center"}}>{disc}% off · Save ${(Number(orig)-Number(sale)).toFixed(0)}</div>}
       </div>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#fbbf24",marginBottom:10,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:"#fbbf24",display:"inline-block"}}/>Headline <span style={{fontSize:8,color:"#6b7280",fontWeight:500}}>optional</span></div>
-        <input value={headline} onChange={e=>{setHeadline(e.target.value);setBlob(null)}} placeholder="e.g. Limited Time Deal" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none"}}/>
+      <div><SLabel n="03" title="Headline" color="#fbbf24" opt/><input value={headline} onChange={e=>{setHeadline(e.target.value);setBlob(null)}} placeholder="e.g. Limited Time Deal" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none"}}/></div>
+      <div>
+        <SLabel n="04" title="Ad Style" color="#f97316"/>
+        <div style={{display:"flex",flexDirection:"column",gap:5}}>
+          {DROP_AD_STYLES.map(s=>(
+            <button key={s.id} onClick={()=>{setStyle(s.id);setBlob(null)}} style={{padding:"10px 12px",borderRadius:9,border:"1px solid",borderColor:style===s.id?"rgba(239,68,68,0.5)":"rgba(255,255,255,0.07)",background:style===s.id?"rgba(239,68,68,0.1)":"rgba(255,255,255,0.02)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.14s"}}>
+              <span style={{fontSize:13,fontWeight:700,color:style===s.id?"#fca5a5":C.text}}>{s.label}</span><span style={{fontSize:10,color:C.muted}}>{s.desc}</span>
+            </button>
+          ))}
+        </div>
       </div>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#f97316",marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:"#f97316",display:"inline-block"}}/>Ad Style</div>
-        <div style={{display:"flex",flexDirection:"column",gap:5}}>{DROP_AD_STYLES.map(s=>(<button key={s.id} onClick={()=>{setStyle(s.id);setBlob(null)}} style={{padding:"10px 12px",borderRadius:9,border:"1px solid",borderColor:style===s.id?"rgba(239,68,68,0.5)":"rgba(255,255,255,0.07)",background:style===s.id?"rgba(239,68,68,0.1)":"rgba(255,255,255,0.02)",cursor:"pointer",textAlign:"left",display:"flex",alignItems:"center",justifyContent:"space-between",transition:"all 0.14s"}}><span style={{fontSize:13,fontWeight:700,color:style===s.id?"#fca5a5":C.text}}>{s.label}</span><span style={{fontSize:10,color:C.muted}}>{s.desc}</span></button>))}</div>
+      <div><SLabel n="05" title="Font & Colour" color="#f97316"/><FontColorPicker font={dropFont} setFont={f=>{setDropFont(f);setBlob(null)}} color={dropColor} setColor={c=>{setDropColor(c);setBlob(null)}} accent={C.red}/></div>
+      <div style={{display:"flex",flexDirection:"column",gap:8}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>{DROP_AD_STYLES.find(s=>s.id===style)?.label} · 5s</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.red}/></div>
+        <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!sale} emptyIcon="🔥" emptyText="Enter a sale price to preview"/>
       </div>
-      <div style={{background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"}}>
-        <div style={{fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:"#a78bfa",marginBottom:12,display:"flex",alignItems:"center",gap:6}}><span style={{width:6,height:6,borderRadius:"50%",background:"#a78bfa",display:"inline-block"}}/>Font & Colour</div>
-        <FontColorPicker font={dropFont} setFont={f=>{setDropFont(f);setBlob(null)}} color={dropColor} setColor={c=>{setDropColor(c);setBlob(null)}} accent={C.red}/>
-      </div>
-      {!isDesktop&&<div><ExportArea disabled={!sale||exporting} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${DROP_AD_STYLES.find(s=>s.id===style)?.label} Drop .webm`}/>{!sale&&<Hint>Enter a sale price</Hint>}</div>}
-    </div>
-  );
-  const dropPreview=(
-    <div style={{display:"flex",flexDirection:"column",gap:10}}>
-      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-        <span style={{fontSize:12,fontWeight:700,color:"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>{DROP_AD_STYLES.find(s=>s.id===style)?.label} · 5s</span>
-        <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.red}/>
-      </div>
-      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#22223a",width:dPW,height:dPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
-        <canvas ref={prevRef} width={675} height={1200} style={{width:dPW,height:dPH,display:"block"}}/>
-        {!sale&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>🔥</div><p style={{fontSize:11,color:"#4b5563",margin:0}}>Enter pricing to preview</p></div>}
-      </div>
-      {isDesktop&&<div style={{marginTop:4}}><ExportArea disabled={!sale||exporting} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${DROP_AD_STYLES.find(s=>s.id===style)?.label} Drop .webm`}/>{!sale&&<Hint>Enter a sale price</Hint>}</div>}
-    </div>
-  );
-  return isDesktop?(
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
-      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>{dropPreview}</div>
-      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto"}}>{dropSettings}</div>
-    </div>
-  ):(
-    <div style={{display:"flex",flexDirection:"column",gap:16,padding:"20px 16px 60px"}}>
-      {dropSettings}
-      {dropPreview}
+      <ExportArea disabled={!sale||exporting} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label={`${DROP_AD_STYLES.find(s=>s.id===style)?.label} Drop .webm`}/>
+      {!sale&&<Hint>Enter a sale price to continue</Hint>}
     </div>
   );
 }
@@ -1250,9 +1128,9 @@ function Root(){
           ))}
         </div>
       )}
-      <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column"}}>
+      <div style={{flex:1,overflowY:"auto"}}>
         {!activeApp?<HomePage onSelect={setActiveApp}/>:(
-          <div style={{flex:1,width:"100%",maxWidth:"100%",display:"flex",flexDirection:"column"}}>
+          <div style={{width:"100%",padding:"0"}}>
             {activeApp==="flick"&&<FlickApp/>}
             {activeApp==="proof"&&<ProofApp/>}
             {activeApp==="hook"&&<HookApp/>}
