@@ -377,12 +377,13 @@ function FlickApp(){
   const dur=((bgs.length*loops*BG_MS)/1000).toFixed(1);
   const canExp=(overlayMode==="text"?textLine.trim().length>0:!!logo)&&bgs.length>0&&!exporting;
   const R2=RATIOS.find(r=>r.key===ratio);
-  const pw=isDesktop?Math.round((window.innerWidth*0.6)-80):Math.min(window.innerWidth-32,280);
-  const ph=Math.round(pw*R2.h/R2.w);
-  // On desktop cap preview height so it fits in viewport
-  const maxPh=isDesktop?window.innerHeight-180:99999;
-  const finalPh=Math.min(ph,maxPh);
-  const finalPw=isDesktop?Math.round(finalPh*R2.w/R2.h):pw;
+  const availH=window.innerHeight-100;
+  const availW=isDesktop?Math.round(window.innerWidth*0.6)-40:window.innerWidth-32;
+  const byH=Math.round(availH*R2.w/R2.h);
+  const byW=availW;
+  const finalPw=isDesktop?Math.min(byH,byW):Math.min(byW,280);
+  const finalPh=Math.round(finalPw*R2.h/R2.w);
+  const pw=finalPw;const ph=finalPh;
 
   // Shared card style for settings groups
   const card={background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"};
@@ -403,7 +404,7 @@ function FlickApp(){
         </div>
       </div>
       {/* Canvas */}
-      <div ref={wrapRef} style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.7)":"rgba(255,255,255,0.08)"},0 20px 60px rgba(0,0,0,0.8)`,background:"#0d0d15",width:finalPw,height:finalPh,flexShrink:0,alignSelf:isDesktop?"flex-start":"center",cursor:editMode?"move":"default",touchAction:editMode?"none":"auto",transition:"box-shadow 0.2s",maxWidth:"100%"}}>
+      <div ref={wrapRef} style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:`0 0 0 ${editMode?"2px":"1px"} ${editMode?"rgba(124,58,237,0.7)":"rgba(255,255,255,0.08)"},0 20px 60px rgba(0,0,0,0.8)`,background:"#22223a",width:finalPw,height:finalPh,flexShrink:0,alignSelf:isDesktop?"flex-start":"center",cursor:editMode?"move":"default",touchAction:editMode?"none":"auto",transition:"box-shadow 0.2s",maxWidth:"100%"}}>
         <canvas ref={prevRef} width={R2.w} height={R2.h} style={{width:finalPw,height:finalPh,display:"block",userSelect:"none",maxWidth:"100%"}}/>
         {(!logo&&bgs.length===0&&overlayMode==="logo")&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,background:"rgba(9,9,16,0.94)"}}><div style={{fontSize:36,opacity:0.08}}>⚡</div><p style={{fontSize:12,color:"#4b5563",margin:0,textAlign:"center",padding:"0 20px",lineHeight:1.6}}>Upload a logo and add background images to preview</p></div>}
         {editMode&&<div style={{position:"absolute",bottom:10,left:0,right:0,display:"flex",justifyContent:"center",pointerEvents:"none"}}><div style={{background:"rgba(0,0,0,0.7)",backdropFilter:"blur(6px)",borderRadius:99,padding:"5px 14px",fontSize:10,color:"rgba(255,255,255,0.75)",fontWeight:600,letterSpacing:"0.03em"}}>drag to move · scroll or pinch to resize</div></div>}
@@ -488,7 +489,7 @@ function FlickApp(){
           </div>
           <div>
             <div style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Loops</div>
-            <div style={{display:"flex",gap:6}}>{[1,2,3].map(n=><Pill key={n} active={loops===n} color="#8b5cf6" onClick={()=>{setLoops(n);setBlob(null)}}>{n}× {n===1?"Once":n===2?"Twice":"3×"}</Pill>)}</div>
+            <div style={{display:"flex",gap:5}}>{[1,2,3,4,5].map(n=><Pill key={n} active={loops===n} color="#8b5cf6" onClick={()=>{setLoops(n);setBlob(null)}}>{n}×</Pill>)}</div>
             {bgs.length>0&&<p style={{fontSize:10,color:"#6b7280",marginTop:6}}>≈ {dur}s total export</p>}
           </div>
         </div>
@@ -519,13 +520,13 @@ function FlickApp(){
 
   return isDesktop?(
     // ── Desktop: preview left (60%), settings right (40%) ──
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 98px)",overflow:"hidden",width:"100%"}}>
+    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
       {/* Left — preview (60%) */}
-      <div style={{flex:"0 0 60%",padding:"28px 24px 28px 40px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.06)"}}>
+      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>
         {previewPanel}
       </div>
       {/* Right — settings (40%) */}
-      <div style={{flex:"0 0 40%",padding:"28px 40px 28px 24px",overflowY:"auto",display:"flex",flexDirection:"column",gap:0}}>
+      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto",display:"flex",flexDirection:"column",gap:0}}>
         {settingsPanel}
       </div>
     </div>
@@ -604,7 +605,7 @@ function ProofApp(){
   const curSlide=Math.floor(curFrame/SLIDE_FRAMES);
   const isDesktop=window.innerWidth>=900;
   const PW=675,PH=1200;
-  const prevW=isDesktop?Math.round((window.innerHeight-180)*PW/PH):Math.min(window.innerWidth-32,280);
+  const prevW=isDesktop?Math.round(Math.min((window.innerHeight-100),(window.innerWidth*0.6-40))*PW/PH):Math.min(window.innerWidth-32,280);
   const prevH=Math.round(prevW*PH/PW);
 
   const proofPreview=(
@@ -613,7 +614,7 @@ function ProofApp(){
         <span style={{fontSize:12,fontWeight:700,color:"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>Preview</span>
         <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.blue}/>
       </div>
-      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#0d0d15",width:prevW,height:prevH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
+      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#22223a",width:prevW,height:prevH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
         <canvas ref={prevRef} width={PW} height={PH} style={{width:prevW,height:prevH,display:"block"}}/>
         {!items.length&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>★</div><p style={{fontSize:11,color:"#4b5563",margin:0}}>Add testimonials to preview</p></div>}
       </div>
@@ -665,9 +666,9 @@ function ProofApp(){
   );
 
   return isDesktop?(
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 98px)",overflow:"hidden",width:"100%"}}>
-      <div style={{flex:"0 0 60%",padding:"28px 24px 28px 40px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.06)"}}>{proofPreview}</div>
-      <div style={{flex:"0 0 40%",padding:"28px 40px 28px 24px",overflowY:"auto"}}>{proofSettings}</div>
+    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
+      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>{proofPreview}</div>
+      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto"}}>{proofSettings}</div>
     </div>
   ):(
     <div style={{display:"flex",flexDirection:"column",gap:16,padding:"20px 16px 60px"}}>
@@ -759,7 +760,7 @@ function HookApp(){
   const toggle=id=>{setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n});setBlob(null)};
   const canExp=active.length>0&&name.trim().length>0&&!exporting;
   const isDesktop=window.innerWidth>=900;
-  const hPW=isDesktop?Math.round((window.innerHeight-180)*675/1200):Math.min(window.innerWidth-32,280);
+  const hPW=isDesktop?Math.round(Math.min((window.innerHeight-100),(window.innerWidth*0.6-40))*675/1200):Math.min(window.innerWidth-32,280);
   const hPH=Math.round(hPW*1200/675);
 
   const hookPreview=(
@@ -768,7 +769,7 @@ function HookApp(){
         <span style={{fontSize:12,fontWeight:700,color:"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>Hook {actH+1} / {active.length}</span>
         <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.amber}/>
       </div>
-      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#0d0d15",width:hPW,height:hPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
+      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#22223a",width:hPW,height:hPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
         <canvas ref={prevRef} width={675} height={1200} style={{width:hPW,height:hPH,display:"block"}}/>
         {!active.length&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>🎣</div><p style={{fontSize:11,color:"#4b5563",margin:0}}>Select hooks to preview</p></div>}
       </div>
@@ -778,9 +779,9 @@ function HookApp(){
   );
 
   if(isDesktop) return(
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 98px)",overflow:"hidden",width:"100%"}}>
-      <div style={{flex:"0 0 60%",padding:"28px 24px 28px 40px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.06)"}}>{hookPreview}</div>
-      <div style={{flex:"0 0 40%",padding:"28px 40px 28px 24px",overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
+    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
+      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>{hookPreview}</div>
+      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto",display:"flex",flexDirection:"column",gap:14}}>
       <div>
         <SLabel n="01" title="Product Image" color={C.amber} opt/>
         <DZ id="hk-img" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setImg(d)}} dragColor="rgba(245,158,11,0.7)" compact>
@@ -848,7 +849,7 @@ function RevealApp(){
   useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[before,after,style,revFont,revColor,drawPrev,playing]);
   const canExp=before&&after&&!exporting;
   const isDesktop=window.innerWidth>=900;
-  const rPW=isDesktop?Math.round((window.innerHeight-180)*675/1200):Math.min(window.innerWidth-32,280);
+  const rPW=isDesktop?Math.round(Math.min((window.innerHeight-100),(window.innerWidth*0.6-40))*675/1200):Math.min(window.innerWidth-32,280);
   const rPH=Math.round(rPW*1200/675);
   const ImgBox=({id,label,value,setter})=>(
     <div style={{flex:1}}><div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,textAlign:"center"}}>{label}</div>
@@ -880,7 +881,7 @@ function RevealApp(){
         <span style={{fontSize:12,fontWeight:700,color:"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>{REVEAL_STYLES.find(s=>s.id===style)?.label} · 3s</span>
         <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.emerald}/>
       </div>
-      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#0d0d15",width:rPW,height:rPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
+      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#22223a",width:rPW,height:rPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
         <canvas ref={prevRef} width={675} height={1200} style={{width:rPW,height:rPH,display:"block"}}/>
         {(!before||!after)&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>✦</div><p style={{fontSize:11,color:"#4b5563",margin:0}}>Upload before and after images</p></div>}
       </div>
@@ -888,9 +889,9 @@ function RevealApp(){
     </div>
   );
   return isDesktop?(
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 98px)",overflow:"hidden",width:"100%"}}>
-      <div style={{flex:"0 0 60%",padding:"28px 24px 28px 40px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.06)"}}>{revealPreview}</div>
-      <div style={{flex:"0 0 40%",padding:"28px 40px 28px 24px",overflowY:"auto"}}>{revealSettings}</div>
+    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
+      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>{revealPreview}</div>
+      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto"}}>{revealSettings}</div>
     </div>
   ):(
     <div style={{display:"flex",flexDirection:"column",gap:16,padding:"20px 16px 60px"}}>
@@ -937,7 +938,7 @@ function DropApp(){
   const disc=orig&&sale?Math.round((1-Number(sale)/Number(orig))*100):null;
   const IS={width:"100%",padding:"9px 11px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none",marginTop:5};
   const isDesktop=window.innerWidth>=900;
-  const dPW=isDesktop?Math.round((window.innerHeight-180)*675/1200):Math.min(window.innerWidth-32,280);
+  const dPW=isDesktop?Math.round(Math.min((window.innerHeight-100),(window.innerWidth*0.6-40))*675/1200):Math.min(window.innerWidth-32,280);
   const dPH=Math.round(dPW*1200/675);
   const dropSettings=(
     <div style={{display:"flex",flexDirection:"column",gap:14}}>
@@ -976,7 +977,7 @@ function DropApp(){
         <span style={{fontSize:12,fontWeight:700,color:"#9ca3af",letterSpacing:"0.05em",textTransform:"uppercase"}}>{DROP_AD_STYLES.find(s=>s.id===style)?.label} · 5s</span>
         <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.red}/>
       </div>
-      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#0d0d15",width:dPW,height:dPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
+      <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.08),0 20px 60px rgba(0,0,0,0.8)",background:"#22223a",width:dPW,height:dPH,flexShrink:0,alignSelf:isDesktop?"flex-start":"center"}}>
         <canvas ref={prevRef} width={675} height={1200} style={{width:dPW,height:dPH,display:"block"}}/>
         {!sale&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:28,opacity:0.1}}>🔥</div><p style={{fontSize:11,color:"#4b5563",margin:0}}>Enter pricing to preview</p></div>}
       </div>
@@ -984,9 +985,9 @@ function DropApp(){
     </div>
   );
   return isDesktop?(
-    <div style={{display:"flex",gap:0,height:"calc(100vh - 98px)",overflow:"hidden",width:"100%"}}>
-      <div style={{flex:"0 0 60%",padding:"28px 24px 28px 40px",display:"flex",flexDirection:"column",gap:16,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.06)"}}>{dropPreview}</div>
-      <div style={{flex:"0 0 40%",padding:"28px 40px 28px 24px",overflowY:"auto"}}>{dropSettings}</div>
+    <div style={{display:"flex",gap:0,height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
+      <div style={{flex:"0 0 60%",padding:"16px 16px 16px 20px",display:"flex",flexDirection:"column",gap:12,overflowY:"auto",borderRight:"1px solid rgba(255,255,255,0.08)"}}>{dropPreview}</div>
+      <div style={{flex:"0 0 40%",padding:"16px 20px 16px 16px",overflowY:"auto"}}>{dropSettings}</div>
     </div>
   ):(
     <div style={{display:"flex",flexDirection:"column",gap:16,padding:"20px 16px 60px"}}>
