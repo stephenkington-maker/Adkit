@@ -434,22 +434,35 @@ function FlickApp(){
     if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60);
   },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,drawFrame,playing]);
 
-  // Multi-element drag system
+  // Multi-element drag system — always reads latest from overlayRef
   useEffect(()=>{
     const canvas=prevRef.current;if(!canvas)return;
-    const ov=overlayRef.current;
     const dist=(t1,t2)=>Math.hypot(t2.clientX-t1.clientX,t2.clientY-t1.clientY);
 
-    // Hit test — which element was clicked?
+    // Hit test — always reads CURRENT overlayRef (no stale closure)
     const hitTest=(cx,cy,W,H)=>{
-      // Convert canvas-relative px to % 
+      const ov=overlayRef.current;
       const px=(cx/W)*100,py=(cy/H)*100;
-      const near=(ex,ey,r=8)=>Math.abs(px-ex)<r&&Math.abs(py-ey)<r;
-      if(ov.emoji&&near(ov.emojiPos.x,ov.emojiPos.y,10))return"emoji";
-      if(ov.mode==="text"&&ov.text&&near(ov.textPos.x,ov.textPos.y,15))return"text";
-      if(ov.mode==="logo"&&near(ov.logoPos.x,ov.logoPos.y,15))return"logo";
-      if(ov.subline&&near(ov.subPos.x,ov.subPos.y,12))return"sub";
-      return"logo"; // default
+      // Large hit radius (18%) so clicking anywhere near an element works
+      const near=(ex,ey,rx=18,ry=18)=>Math.abs(px-ex)<rx&&Math.abs(py-ey)<ry;
+      // Priority: emoji > text/logo > subline > cta — pick closest
+      const candidates=[];
+      if(ov.emoji)candidates.push({el:"emoji",dx:Math.abs(px-ov.emojiPos.x),dy:Math.abs(py-ov.emojiPos.y)});
+      if(ov.mode==="text"&&ov.text)candidates.push({el:"text",dx:Math.abs(px-ov.textPos.x),dy:Math.abs(py-ov.textPos.y)});
+      if(ov.mode==="logo")candidates.push({el:"logo",dx:Math.abs(px-ov.logoPos.x),dy:Math.abs(py-ov.logoPos.y)});
+      if(ov.subline)candidates.push({el:"sub",dx:Math.abs(px-ov.subPos.x),dy:Math.abs(py-ov.subPos.y)});
+      if(!candidates.length)return"logo";
+      // Return element whose centre is closest to click point
+      candidates.sort((a,b)=>(a.dx+a.dy)-(b.dx+b.dy));
+      return candidates[0].el;
+    };
+
+    const getPos=(el)=>{
+      const ov=overlayRef.current;
+      if(el==="logo")return ov.logoPos;
+      if(el==="text")return ov.textPos;
+      if(el==="sub")return ov.subPos;
+      return ov.emojiPos;
     };
 
     const updatePos=(el,nx,ny)=>{
@@ -467,9 +480,10 @@ function FlickApp(){
       const cx=e.clientX-r.left,cy=e.clientY-r.top;
       const el=hitTest(cx,cy,r.width,r.height);
       activeElRef.current=el;setActiveEl(el);
-      dragRef.current={active:true,startX:e.clientX,startY:e.clientY,
-        startLx:overlayRef.current[el==="logo"?"logoPos":el==="text"?"textPos":el==="sub"?"subPos":"emojiPos"].x,
-        startLy:overlayRef.current[el==="logo"?"logoPos":el==="text"?"textPos":el==="sub"?"subPos":"emojiPos"].y};
+      const pos=getPos(el);
+      dragRef.current={active:true,startX:e.clientX,startY:e.clientY,startLx:pos.x,startLy:pos.y};
+      // Immediately redraw with selection indicator
+      if(prevRef.current)drawFrame(prevRef.current,bgIdxRef.current||0,el);
     };
     const onMouseMove=e=>{
       if(!dragRef.current.active)return;
@@ -477,17 +491,20 @@ function FlickApp(){
       const dx=((e.clientX-dragRef.current.startX)/r.width)*100;
       const dy=((e.clientY-dragRef.current.startY)/r.height)*100;
       updatePos(activeElRef.current,dragRef.current.startLx+dx,dragRef.current.startLy+dy);
+      // Redraw immediately on every move
+      if(prevRef.current)drawFrame(prevRef.current,bgIdxRef.current||0,activeElRef.current);
     };
     const onMouseUp=()=>{dragRef.current.active=false};
     const onWheel=e=>{
       e.preventDefault();
-      const el=activeElRef.current||"logo";
+      const el=activeElRef.current||hitTest(e.offsetX,e.offsetY,canvas.clientWidth,canvas.clientHeight);
       const ov2=overlayRef.current;
       const delta=e.deltaY>0?-2:2;
       if(el==="logo"){const ns=Math.max(5,Math.min(95,ov2.logoPos.s+delta));const np={...ov2.logoPos,s:ns};overlayRef.current={...ov2,logoPos:np};setLogoPos(np);setLogoScale(ns)}
-      else if(el==="text"){setTextSize(v=>Math.max(10,Math.min(100,v+delta)))}
-      else if(el==="sub"){setSubSize(v=>Math.max(10,Math.min(80,v+delta)))}
-      else if(el==="emoji"){setEmojiSize(v=>Math.max(10,Math.min(90,v+delta)))}
+      else if(el==="text"){setTextSize(v=>Math.max(10,Math.min(100,v+delta)));overlayRef.current={...ov2,size:Math.max(10,Math.min(100,ov2.size+delta))}}
+      else if(el==="sub"){setSubSize(v=>Math.max(10,Math.min(80,v+delta)));overlayRef.current={...ov2,subSize:Math.max(10,Math.min(80,ov2.subSize+delta))}}
+      else if(el==="emoji"){setEmojiSize(v=>Math.max(10,Math.min(90,v+delta)));overlayRef.current={...ov2,emojiSize:Math.max(10,Math.min(90,ov2.emojiSize+delta))}}
+      if(prevRef.current)drawFrame(prevRef.current,bgIdxRef.current||0,activeElRef.current);
     };
     const onTouchStart=e=>{
       if(e.touches.length===1){
