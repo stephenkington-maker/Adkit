@@ -23,7 +23,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&family=Bebas+Neue&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800&family=DM+Serif+Display&family=Montserrat:wght@700;800;900&family=Raleway:wght@700;800;900&family=Unbounded:wght@700;800;900&family=Cormorant+Garamond:wght@600;700&family=Archivo+Black&family=Poppins:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{height:100%;width:100%}
-body{background:#090910;color:#e8e8f2;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+body{background:#090910;color:#d4d4e8;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
 input,textarea,button{font-family:inherit}
 input[type=range]{accent-color:#7c3aed;cursor:pointer;width:100%}
 ::-webkit-scrollbar{width:3px;height:3px}
@@ -223,7 +223,7 @@ function AudioChip({name,dur,onRemove}){
 function FontColorPicker({font,setFont,color,setColor,accent}){
   const ac=accent||C.purple;
   return(
-    <div style={{display:"flex",flexDirection:"column",gap:12,padding:"12px",background:"rgba(255,255,255,0.02)",borderRadius:10,border:"1px solid rgba(255,255,255,0.06)"}}>
+    <div style={{display:"flex",flexDirection:"column",gap:12,padding:"12px",background:"rgba(255,255,255,0.05)",borderRadius:10,border:"1px solid rgba(255,255,255,0.06)"}}>
       <div>
         <div style={{fontSize:9,fontWeight:700,color:C.muted,letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:7}}>Font</div>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:4}}>
@@ -651,7 +651,7 @@ function FlickApp(){
   const ph=Math.round(pw*R2.h/R2.w);
 
   // Shared card style for settings groups
-  const card={background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.08)",borderRadius:14,padding:"18px 16px"};
+  const card={background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.1)",borderRadius:14,padding:"18px 16px"};
   const secTitle={fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:12,display:"flex",alignItems:"center",gap:6};
   const isDesktop=window.innerWidth>=900;
 
@@ -750,7 +750,7 @@ function FlickApp(){
         </div>
         {showSubline&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            <input value={subline} onChange={e=>{setSubline(e.target.value);setBlob(null)}} placeholder="Your tagline or description..." style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none",fontFamily:"'Poppins',sans-serif"}}/>
+            <input value={subline} onChange={e=>{setSubline(e.target.value);setBlob(null)}} placeholder="Your tagline or description..." style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none",fontFamily:"'Poppins',sans-serif"}}/>
             <div style={{display:"flex",gap:6,alignItems:"center",flexWrap:"wrap"}}>
               <span style={{fontSize:9,fontWeight:700,color:"#9ca3af",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Colour</span>
               {["#ffffff","#e8e8f2","#9ca3af","#fbbf24","#ec4899","#7c3aed","#0ea5e9","#10b981"].map(c=>(
@@ -775,7 +775,7 @@ function FlickApp(){
         </div>
         {showEmoji&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            <input value={emoji} onChange={e=>{setEmoji(e.target.value);setBlob(null)}} placeholder="Paste or pick emoji" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:22,outline:"none"}} maxLength={8}/>
+            <input value={emoji} onChange={e=>{setEmoji(e.target.value);setBlob(null)}} placeholder="Paste or pick emoji" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:22,outline:"none"}} maxLength={8}/>
             <div style={{display:"flex",flexWrap:"wrap",gap:5}}>
               {["🔥","⚡","🚀","💥","🎯","✨","💎","👑","🏆","🎉","💰","⭐","🌟","🎪","🔑","💫"].map(e2=>(
                 <button key={e2} onClick={()=>{setEmoji(e2);setBlob(null)}} style={{width:32,height:32,borderRadius:7,background:emoji===e2?"rgba(245,158,11,0.2)":"rgba(255,255,255,0.04)",border:`1px solid ${emoji===e2?"rgba(245,158,11,0.5)":"rgba(255,255,255,0.08)"}`,cursor:"pointer",fontSize:18,display:"flex",alignItems:"center",justifyContent:"center"}}>{e2}</button>
@@ -850,10 +850,13 @@ function FlickApp(){
     </div>
   );
 
-  // Canvas size: fill 50% width, constrained by height
+  // Canvas: fits within 50% col, leaving room for header bar (100px) + preview label (36px) + dots (20px) + export (100px) + padding
   const colW=window.innerWidth*0.5;
-  const previewH=Math.min(window.innerHeight-160,colW-40)*R2.h/R2.w;
-  const previewW=Math.round(previewH*R2.w/R2.h);
+  const availH=window.innerHeight-100-36-20-110; // viewport minus chrome
+  const byHeight=Math.round(availH*R2.w/R2.h);
+  const byWidth=Math.round((colW*0.9)); // 90% of column width
+  const previewW=Math.min(byHeight,byWidth);
+  const previewH=Math.round(previewW*R2.h/R2.w);
 
   return isDesktop?(
     <div style={{display:"flex",height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
@@ -877,13 +880,13 @@ function FlickApp(){
       </div>
 
       {/* RIGHT — Settings 50% with sticky render at bottom */}
-      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",overflow:"hidden",background:"#16161f"}}>
         {/* Scrollable settings */}
         <div style={{flex:1,overflowY:"auto",padding:"16px 20px 8px",display:"flex",flexDirection:"column",gap:12}}>
           {settingsPanel}
         </div>
         {/* Sticky render button at bottom */}
-        <div style={{flexShrink:0,padding:"12px 20px 16px",borderTop:"1px solid rgba(255,255,255,0.07)",background:"#090910"}}>
+        <div style={{flexShrink:0,padding:"12px 20px 16px",borderTop:"1px solid rgba(255,255,255,0.1)",background:"#16161f"}}>
           {renderWarn&&<p style={{fontSize:11,color:"#ef4444",textAlign:"center",marginBottom:4,fontWeight:600}}>{renderWarn}</p>}
           <button onClick={()=>{
             if(bgs.length===0){setRenderWarn("Add background images first");return}
@@ -987,12 +990,15 @@ function ProofApp(){
   useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(0),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
   useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[items,tmpl,proofFont,proofColor,drawPrev,playing]);
   const save=()=>{if(editIdx===null)return;const n=[...items];n[editIdx]={...editBuf};setItems(n);setEditIdx(null);setBlob(null)};
-  const IS={width:"100%",padding:"8px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:12,outline:"none",marginTop:4};
+  const IS={width:"100%",padding:"8px 10px",borderRadius:8,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:12,outline:"none",marginTop:4};
   const curSlide=Math.floor(curFrame/SLIDE_FRAMES);
   const isDesktop=window.innerWidth>=900;
   const PW=675,PH=1200;
-  const pH2=isDesktop?Math.min(window.innerHeight-140,(window.innerWidth*0.5-40)*PH/PW):(window.innerWidth-32)*PH/PW;
-  const pW2=Math.round(pH2*PW/PH);
+  const availH2=isDesktop?window.innerHeight-100-36-20-110:99999;
+  const byH2=Math.round(availH2*PW/PH);
+  const byW2=isDesktop?Math.round(window.innerWidth*0.5*0.9):window.innerWidth-32;
+  const pW2=Math.min(byH2,byW2);
+  const pH2=Math.round(pW2*PH/PW);
   return isDesktop?(
     <div style={{display:"flex",height:"calc(100vh - 100px)",overflow:"hidden"}}>
       <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,padding:"5%",borderRight:"1px solid rgba(255,255,255,0.07)",background:"rgba(0,0,0,0.12)"}}>
@@ -1004,13 +1010,13 @@ function ProofApp(){
         <div style={{display:"flex",gap:3,justifyContent:"center",width:pW2}}>{items.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:curSlide===i&&playing?"#0ea5e9":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>
         <div style={{width:pW2}}><ExportArea disabled={!items.length||exporting} onRender={()=>run(PW,PH)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/></div>
       </div>
-      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",overflow:"hidden",background:"#16161f"}}>
         <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
       <div>
         <SLabel n="01" title={`Testimonials (${items.length})`} color={C.blue}/>
         <div style={{display:"flex",flexDirection:"column",gap:5}}>
           {items.map((t,i)=>(
-            <div key={i} onClick={()=>{setEditIdx(i);setEditBuf({...t})}} style={{padding:"10px 12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.07)",background:"rgba(255,255,255,0.02)",cursor:"pointer",display:"flex",gap:8,alignItems:"flex-start"}}>
+            <div key={i} onClick={()=>{setEditIdx(i);setEditBuf({...t})}} style={{padding:"10px 12px",borderRadius:9,border:"1px solid rgba(255,255,255,0.07)",background:"rgba(255,255,255,0.05)",cursor:"pointer",display:"flex",gap:8,alignItems:"flex-start"}}>
               <div style={{flex:1,minWidth:0}}><div style={{fontSize:12,color:C.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{t.text.replace(/\*\*/g,"")}</div><div style={{fontSize:9,color:C.muted,marginTop:2}}>{"★".repeat(t.stars||5)} · {t.author}</div></div>
               <button onClick={e=>{e.stopPropagation();setItems(p=>p.filter((_,j)=>j!==i));setBlob(null)}} style={{background:"none",border:"none",color:C.muted,cursor:"pointer",fontSize:12,flexShrink:0}}>✕</button>
             </div>
@@ -1032,7 +1038,7 @@ function ProofApp(){
           <input type="range" min="1" max="5" value={editBuf.stars} onChange={e=>setEditBuf(b=>({...b,stars:Number(e.target.value)}))} style={{accentColor:"#fbbf24"}}/>
           <div style={{display:"flex",gap:6,marginTop:10}}>
             <button onClick={save} style={{flex:1,padding:"9px",borderRadius:8,background:"linear-gradient(135deg,#0ea5e9,#6366f1)",border:"none",color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Save</button>
-            <button onClick={()=>setEditIdx(null)} style={{flex:1,padding:"9px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.muted,fontSize:12,cursor:"pointer"}}>Cancel</button>
+            <button onClick={()=>setEditIdx(null)} style={{flex:1,padding:"9px",borderRadius:8,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",color:C.muted,fontSize:12,cursor:"pointer"}}>Cancel</button>
           </div>
         </div>
       )}
@@ -1046,7 +1052,7 @@ function ProofApp(){
         <div style={{display:"flex",gap:3,justifyContent:"center"}}>{items.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:curSlide===i&&playing?"#0ea5e9":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>
       </div>
         </div>
-        <div style={{flexShrink:0,padding:"12px 20px 16px",borderTop:"1px solid rgba(255,255,255,0.07)",background:"#090910"}}><ExportArea disabled={!items.length||exporting} onRender={()=>run(PW,PH)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>{!items.length&&<Hint>Add at least one testimonial</Hint>}</div>
+        <div style={{flexShrink:0,padding:"12px 20px 16px",borderTop:"1px solid rgba(255,255,255,0.1)",background:"#16161f"}}><ExportArea disabled={!items.length||exporting} onRender={()=>run(PW,PH)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>{!items.length&&<Hint>Add at least one testimonial</Hint>}</div>
       </div>
     </div>
   ):(
@@ -1117,7 +1123,7 @@ function HookApp(){
           {img?<div style={{display:"flex",alignItems:"center",gap:10}}><img src={img} style={{width:44,height:44,objectFit:"cover",borderRadius:6}} alt=""/><span style={{fontSize:12,color:C.muted}}>Tap to replace</span></div>:<><div style={{fontSize:16,opacity:0.25,marginBottom:3}}>📦</div><div style={{fontSize:13,color:C.muted}}>Drop product image</div></>}
         </DZ>
       </div>
-      <div><SLabel n="02" title="Product Name" color={C.amber}/><input value={name} onChange={e=>{setName(e.target.value);setBlob(null)}} placeholder="e.g. Cold Brew Concentrate" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none"}}/></div>
+      <div><SLabel n="02" title="Product Name" color={C.amber}/><input value={name} onChange={e=>{setName(e.target.value);setBlob(null)}} placeholder="e.g. Cold Brew Concentrate" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none"}}/></div>
       <div>
         <SLabel n="03" title={`Hooks (${sel.size} selected)`} color="#fbbf24"/>
         <p style={{fontSize:10,color:C.muted,marginBottom:7,lineHeight:1.5}}>Each selected hook becomes a separate ad variation.</p>
@@ -1250,7 +1256,7 @@ function DropApp(){
   useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(SF),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
   useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(SF),60)},[img,orig,sale,headline,style,dropFont,dropColor,drawPrev,playing]);
   const disc=orig&&sale?Math.round((1-Number(sale)/Number(orig))*100):null;
-  const IS={width:"100%",padding:"9px 11px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none",marginTop:5};
+  const IS={width:"100%",padding:"9px 11px",borderRadius:9,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none",marginTop:5};
   return(
     <div style={{display:"flex",flexDirection:"column",gap:20}}>
       <div>
@@ -1267,7 +1273,7 @@ function DropApp(){
         </div>
         {disc&&disc>0&&<div style={{marginTop:7,padding:"7px 12px",borderRadius:8,background:"rgba(239,68,68,0.1)",border:"1px solid rgba(239,68,68,0.25)",fontSize:12,fontWeight:800,color:"#f87171",textAlign:"center"}}>{disc}% off · Save ${(Number(orig)-Number(sale)).toFixed(0)}</div>}
       </div>
-      <div><SLabel n="03" title="Headline" color="#fbbf24" opt/><input value={headline} onChange={e=>{setHeadline(e.target.value);setBlob(null)}} placeholder="e.g. Limited Time Deal" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none"}}/></div>
+      <div><SLabel n="03" title="Headline" color="#fbbf24" opt/><input value={headline} onChange={e=>{setHeadline(e.target.value);setBlob(null)}} placeholder="e.g. Limited Time Deal" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"rgba(255,255,255,0.07)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:13,outline:"none"}}/></div>
       <div>
         <SLabel n="04" title="Ad Style" color="#f97316"/>
         <div style={{display:"flex",flexDirection:"column",gap:5}}>
@@ -1539,7 +1545,7 @@ function Root(){
         {!activeApp&&<div style={{flex:1}}/>}
       </header>
       {activeApp&&(
-        <div style={{display:"flex",gap:0,borderBottom:`1px solid ${C.border}`,background:"rgba(255,255,255,0.01)",overflowX:"auto",flexShrink:0}}>
+        <div style={{display:"flex",gap:0,borderBottom:`1px solid ${C.border}`,background:"rgba(255,255,255,0.04)",overflowX:"auto",flexShrink:0}}>
           {APPS.map(app=>(
             <button key={app.id} onClick={()=>setActiveApp(app.id)} style={{padding:"8px 14px",fontSize:12,fontWeight:700,cursor:"pointer",background:"none",border:"none",borderBottom:activeApp===app.id?`2px solid ${app.color}`:"2px solid transparent",color:activeApp===app.id?app.color:C.muted,transition:"all 0.14s",whiteSpace:"nowrap",flexShrink:0}}>{app.icon} {app.name}</button>
           ))}
