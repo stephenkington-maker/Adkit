@@ -933,7 +933,7 @@ function FlickApp(){
             if(overlayMode==="logo"&&!logo){setRenderWarn("Upload a logo first");return}
             if(overlayMode==="text"&&!textLine.trim()){setRenderWarn("Enter some text first");return}
             setRenderWarn("");run(R2.w,R2.h);
-          }} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",background:exporting?"rgba(0,0,0,0.06)":undefined,color:exporting?"#9ca3af":"#fff",fontSize:14,fontWeight:800,cursor:exporting?"not-allowed":"pointer",letterSpacing:"0.02em",boxShadow:!exporting?"0 4px 24px rgba(124,58,237,0.35)":"none",transition:"all 0.18s"}}>
+          }} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"15px",borderRadius:12,border:"none",background:exporting?"rgba(0,0,0,0.06)":undefined,color:"#fff",fontSize:14,fontWeight:800,cursor:exporting?"not-allowed":"pointer",letterSpacing:"0.02em",boxShadow:!exporting?"0 4px 24px rgba(124,58,237,0.35)":"none",transition:"all 0.18s",opacity:exporting?0.5:1}}>
             {exporting?(exportStatus||`Rendering… ${prog}%`):"⚙ Render Video"}
           </button>
           {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(0,0,0,0.08)",overflow:"hidden",marginTop:8}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
@@ -992,7 +992,7 @@ function ThreeColLayout({left,centre,right,accentColor,canExport,onRender,export
         </div>
         <div style={{flexShrink:0,padding:"12px 14px 16px",borderTop:"1px solid rgba(0,0,0,0.07)",background:"#f0f0f6"}}>
           {warnText&&<p style={{fontSize:11,color:"#ef4444",textAlign:"center",marginBottom:6,fontWeight:600}}>⚠ {warnText}</p>}
-          <button onClick={onRender} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:exporting?"rgba(0,0,0,0.06)":undefined,color:exporting?"#9ca3af":"#fff",fontSize:14,fontWeight:800,cursor:exporting?"not-allowed":"pointer",letterSpacing:"0.02em",boxShadow:!exporting?"0 4px 24px rgba(124,58,237,0.35)":"none",transition:"all 0.18s"}}>
+          <button onClick={onRender} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"14px",borderRadius:12,border:"none",background:exporting?"rgba(0,0,0,0.06)":undefined,color:"#fff",fontSize:14,fontWeight:800,cursor:exporting?"not-allowed":"pointer",letterSpacing:"0.02em",boxShadow:!exporting?"0 4px 24px rgba(124,58,237,0.35)":"none",transition:"all 0.18s",opacity:exporting?0.5:1}}>
             {exporting?(exportStatus||`Rendering… ${prog}%`):"⚙ Render Video"}
           </button>
           {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(0,0,0,0.08)",overflow:"hidden",marginTop:8}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
