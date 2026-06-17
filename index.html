@@ -77,6 +77,7 @@ const APPS=[
   {id:"drop",   name:"Drop",   icon:"🔥",color:C.red,    tag:"Promo"},
 ];
 const BRAND="Scrolljack";
+const LOGO_URL="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiB2ZXJzaW9uPSIxLjEiIHZpZXdCb3g9IjAgMCAzOTYuMiAzMTMuNyI+CiAgPCEtLSBHZW5lcmF0b3I6IEFkb2JlIElsbHVzdHJhdG9yIDI5LjguNiwgU1ZHIEV4cG9ydCBQbHVnLUluIC4gU1ZHIFZlcnNpb246IDIuMS4xIEJ1aWxkIDEpICAtLT4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLnN0MCwgLnN0MSwgLnN0MiB7CiAgICAgICAgZmlsbDogI2ZmZjsKICAgICAgfQoKICAgICAgLnN0MyB7CiAgICAgICAgZmlsbDogbm9uZTsKICAgICAgICBmb250LXNpemU6IDg4cHg7CiAgICAgICAgbGV0dGVyLXNwYWNpbmc6IDBlbTsKICAgICAgICBzdHJva2U6ICNmZmY7CiAgICAgICAgc3Ryb2tlLW1pdGVybGltaXQ6IDEwOwogICAgICAgIHN0cm9rZS13aWR0aDogLjhweDsKICAgICAgfQoKICAgICAgLnN0MSB7CiAgICAgICAgbGV0dGVyLXNwYWNpbmc6IDBlbTsKICAgICAgfQoKICAgICAgLnN0MSwgLnN0MiB7CiAgICAgICAgZm9udC1zaXplOiA4OC4ycHg7CiAgICAgIH0KCiAgICAgIC5zdDQgewogICAgICAgIGZvbnQtZmFtaWx5OiBCZWJhc05ldWUsICdCZWJhcyBOZXVlJzsKICAgICAgfQoKICAgICAgLnN0MiB7CiAgICAgICAgbGV0dGVyLXNwYWNpbmc6IDBlbTsKICAgICAgfQogICAgPC9zdHlsZT4KICA8L2RlZnM+CiAgPHRleHQgY2xhc3M9InN0NCIgdHJhbnNmb3JtPSJ0cmFuc2xhdGUoLTQyMS42IDM4Mi4yKSI+PHRzcGFuIGNsYXNzPSJzdDIiIHg9IjAiIHk9IjAiPlNDUk9MPC90c3Bhbj48dHNwYW4gY2xhc3M9InN0MSIgeD0iMTcxLjciIHk9IjAiPkw8L3RzcGFuPjx0c3BhbiBjbGFzcz0ic3QzIiB4PSIxOTkuOSIgeT0iMCI+SkFDSzwvdHNwYW4+PC90ZXh0PgogIDxnPgogICAgPHBhdGggY2xhc3M9InN0MCIgZD0iTTQ2LjQsMjMyLjljOS40LDAsMTQuMyw1LjYsMTQuMywxNS41djEuOWgtOS4ydi0yLjZjMC00LjQtMS44LTYuMS00LjktNi4xcy00LjksMS43LTQuOSw2LjEsMS45LDcuOCw4LjMsMTMuNGM4LjEsNy4xLDEwLjcsMTIuMywxMC43LDE5LjNzLTQuOSwxNS41LTE0LjUsMTUuNS0xNC41LTUuNi0xNC41LTE1LjV2LTMuOGg5LjJ2NC40YzAsNC40LDEuOSw2LDUsNnM1LTEuNiw1LTYtMS45LTcuOC04LjMtMTMuNGMtOC4xLTcuMS0xMC43LTEyLjMtMTAuNy0xOS4zczQuOS0xNS41LDE0LjMtMTUuNVoiLz4KICAgIDxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik05NS40LDI3Mi4zdjguMmMwLDkuOS00LjksMTUuNS0xNC41LDE1LjVzLTE0LjUtNS42LTE0LjUtMTUuNXYtMzIuMWMwLTkuOSw0LjktMTUuNSwxNC41LTE1LjVzMTQuNSw1LjYsMTQuNSwxNS41djZoLTkuMnYtNi42YzAtNC40LTEuOS02LjEtNS02LjFzLTUsMS43LTUsNi4xdjMzLjNjMCw0LjQsMS45LDYsNSw2czUtMS42LDUtNnYtOC44aDkuMloiLz4KICAgIDxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0xMjIuNSwyOTUuM2MtLjUtMS42LS45LTIuNi0uOS03LjZ2LTkuN2MwLTUuNy0xLjktNy44LTYuMy03LjhoLTMuNHYyNS4xaC05Ljd2LTYxLjdoMTQuNmMxMC4xLDAsMTQuNCw0LjcsMTQuNCwxNC4ydjQuOWMwLDYuMy0yLDEwLjQtNi40LDEyLjR2LjJjNC45LDIsNi40LDYuNiw2LjQsMTMuMXY5LjVjMCwzLDAsNS4yLDEuMSw3LjVoLTkuOVpNMTExLjksMjQyLjR2MTloMy44YzMuNiwwLDUuOC0xLjYsNS44LTYuNXYtNi4xYzAtNC40LTEuNS02LjQtNC45LTYuNGgtNC43WiIvPgogICAgPHBhdGggY2xhc3M9InN0MCIgZD0iTTEzNy43LDI0OC40YzAtOS45LDUuMi0xNS41LDE0LjctMTUuNXMxNC43LDUuNiwxNC43LDE1LjV2MzIuMWMwLDkuOS01LjIsMTUuNS0xNC43LDE1LjVzLTE0LjctNS42LTE0LjctMTUuNXYtMzIuMVpNMTQ3LjQsMjgxLjFjMCw0LjQsMS45LDYuMSw1LDYuMXM1LTEuNyw1LTYuMXYtMzMuM2MwLTQuNC0xLjktNi4xLTUtNi4xcy01LDEuNy01LDYuMXYzMy4zWiIvPgogICAgPHBhdGggY2xhc3M9InN0MCIgZD0iTTE3NC4zLDIzMy42aDkuN3Y1Mi45aDE2djguOGgtMjUuN3YtNjEuN1oiLz4KICAgIDxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yMDUuMSwyMzMuNmg5Ljd2NTIuOWgxNnY4LjhoLTI1Ljd2LTYxLjdaIi8+CiAgICA8cGF0aCBjbGFzcz0ic3QwIiBkPSJNMjM1LjMsMjk1LjljLTEuNywwLTMuMSwwLTQuNy0uMmgtLjR2LTkuNmguNGMxLC4xLDIuMi4xLDMuMy4xLDMuNiwwLDUuMS0xLjYsNS4xLTUuNXYtNDcuNGgxMC41djQ2LjdjMCwxMC41LTQuOCwxNS45LTE0LjMsMTUuOVpNMjMxLjEsMjk1YzEuNC4xLDIuNi4xLDQuMy4xLDkuMSwwLDEzLjUtNC45LDEzLjUtMTUuMXYtNDUuOWgtOC45djQ2LjZjMCw0LjMtMS45LDYuMy01LjksNi4zcy0yLDAtMi45LDB2OFoiLz4KICAgIDxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0yODguNSwyOTUuN2gtMTAuNmwtMS43LTExLjJoLTExLjJsLTEuNywxMS4yaC05LjdsMTAtNjIuNGgxNC44bDEwLDYyLjRaTTI3OC42LDI5NC45aDlsLTkuNy02MC44aC0xMy41bC05LjcsNjAuOGg4LjFsMS43LTExLjJoMTIuNmwxLjcsMTEuMlpNMjc1LjcsMjc2LjJoLTEwLjNsNC43LTMyaC45bDQuNywzMlpNMjY2LjQsMjc1LjRoOC40bC00LjItMjguNi00LjIsMjguNloiLz4KICAgIDxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0zMDcsMjk2LjRjLTkuNiwwLTE0LjgtNS42LTE0LjgtMTUuOXYtMzJjMC0xMC4yLDUuMy0xNS45LDE0LjgtMTUuOXMxNC44LDUuNiwxNC44LDE1Ljl2Ni40aC0xMHYtN2MwLTMuOS0xLjUtNS43LTQuNi01LjdzLTQuNiwxLjgtNC42LDUuN3YzMy4zYzAsMy44LDEuNSw1LjYsNC42LDUuNnM0LjYtMS44LDQuNi01LjZ2LTkuMmgxMHY4LjZjMCwxMC4yLTUuMywxNS45LTE0LjgsMTUuOVpNMzA3LDIzMy40Yy05LjIsMC0xNCw1LjItMTQsMTUuMXYzMmMwLDkuOSw0LjksMTUuMSwxNCwxNS4xczE0LTUuMiwxNC0xNS4xdi03LjhoLTguNHY4LjRjMCw0LjItMS44LDYuNC01LjQsNi40cy01LjQtMi4xLTUuNC02LjR2LTMzLjNjMC00LjMsMS44LTYuNSw1LjQtNi41czUuNCwyLjIsNS40LDYuNXY2LjJoOC40di01LjZjMC05LjktNC45LTE1LjEtMTQtMTUuMVoiLz4KICAgIDxwYXRoIGNsYXNzPSJzdDAiIGQ9Ik0zNjAuOCwyOTUuN2gtMTAuOHYtLjNjMCwwLTkuMi0yMy43LTkuMi0yMy43bC0yLjUsNC44djE5LjJoLTEwLjV2LTYyLjRoMTAuNXYyNS42bDEyLTI1LjZoMTAuNmwtMTMuNywyNy45LDEzLjYsMzQuNVpNMzUwLjUsMjk0LjloOS4xbC0xMy4zLTMzLjh2LS4yYzAsMCwxMy4zLTI2LjksMTMuMy0yNi45aC04LjhsLTEyLjUsMjYuN2gtLjh2LTI2LjdoLTguOXY2MC44aDguOXYtMTguN3MzLjUtNi40LDMuNS02LjRsOS42LDI1LjFaIi8+CiAgPC9nPgo8L3N2Zz4=";
 const DURATIONS=[5,8,10,15,20]; // seconds
 
 // ─── FONTS & COLOURS ──────────────────────────────────────────────────────────
@@ -146,10 +147,10 @@ function useExport(renderFn,totalFrames,filename){
 function SLabel({n,title,color,opt}){
   return(
     <div style={{display:"flex",alignItems:"center",gap:5,marginBottom:7}}>
-      <span style={{fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:color||C.purple}}>
-        <span style={{opacity:0.4}}>{n} </span>{title}
+      <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,fontWeight:400,letterSpacing:"0.1em",textTransform:"uppercase",color:color||C.purple}}>
+        <span style={{opacity:0.35}}>{n} </span>{title}
       </span>
-      {opt&&<span style={{fontSize:8,color:C.muted,fontWeight:500}}>· optional</span>}
+      {opt&&<span style={{fontSize:8,color:C.muted,fontWeight:500,fontFamily:"Inter,sans-serif"}}>optional</span>}
     </div>
   );
 }
@@ -652,7 +653,7 @@ function FlickApp(){
 
   // Shared card style for settings groups
   const card={background:"#ffffff",border:"1px solid rgba(0,0,0,0.08)",borderRadius:14,padding:"18px 16px"};
-  const secTitle={fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:12,display:"flex",alignItems:"center",gap:6};
+  const secTitle={fontFamily:"'Bebas Neue',sans-serif",fontSize:16,fontWeight:400,letterSpacing:"0.12em",textTransform:"uppercase",marginBottom:12,display:"flex",alignItems:"center",gap:6};
   const isDesktop=window.innerWidth>=900;
 
   // Preview panel — shared between layouts
@@ -1384,11 +1385,11 @@ const DEMO_FN={flick:drawFlickDemo,proof:drawProofDemo,hook:drawHookDemo,reveal:
 
 // ─── HOME PAGE ────────────────────────────────────────────────────────────────
 const DESCS={
-  flick:"Create scroll-stopping brand ads in seconds. Upload your logo, drop in backgrounds and export a fast-cut video ad ready for Instagram, TikTok and Facebook.",
-  proof:"Turn customer reviews into animated social proof videos. Highlight key words, add star ratings and export polished testimonial ads.",
-  hook:"Generate 6 high-performing hook ad variations from one product name. Proven patterns that stop the scroll.",
-  reveal:"Before-and-after ads with 4 reveal styles — swipe, split, flash or zoom. Perfect for transformations and comparisons.",
-  drop:"Promotion and sale ads with animated price reveals. Urgency-driven layouts that drive clicks.",
+  flick:"Upload your logo. Drop in your backgrounds. Export a fast-cut brand ad that hijacks attention in 0.3 seconds. Built for the feed, not a timeline.",
+  proof:"Your customers said it better than you ever could. Turn their words into animated proof that converts cold scrollers into buyers.",
+  hook:"Six psychologically-proven hooks. One product name. Infinite reasons to stop scrolling. Run them all. Keep what wins.",
+  reveal:"Before and after. The oldest trick in the book — and still the one nobody can look away from. Four ways to land the gut-punch.",
+  drop:"Price drops that feel like events. Animated urgency that makes people act before they've finished reading.",
 };
 
 function HomePage({onSelect}){
@@ -1402,9 +1403,10 @@ function HomePage({onSelect}){
 
         {/* ── Hero header ── */}
         <div style={{textAlign:"center",marginBottom:40}}>
-          <div style={{width:64,height:64,borderRadius:18,background:"linear-gradient(135deg,#7c3aed,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,margin:"0 auto 20px",boxShadow:"0 0 40px rgba(124,58,237,0.45)"}}>⚡</div>
-          <h1 style={{fontSize:"clamp(40px,8vw,72px)",fontWeight:900,letterSpacing:"-2px",lineHeight:1,marginBottom:14,background:"linear-gradient(90deg,#7c3aed,#ec4899 50%,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Scrolljack</h1>
-          <p style={{fontSize:16,color:"#6b7280",lineHeight:1.7,maxWidth:420,margin:"0 auto"}}>Purpose-built ad creation tools for social media marketers, founders and Shopify brands.</p>
+          <img src={LOGO_URL} alt="Scrolljack" style={{height:52,margin:"0 auto 24px",display:"block"}}/>
+          <h1 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"min(9vw,88px)",fontWeight:400,letterSpacing:"0.04em",lineHeight:1,marginBottom:14,color:"#f0f0f8"}}>Scrolljack</h1>
+          <p style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"min(2.5vw,20px)",fontWeight:400,letterSpacing:"0.2em",color:"rgba(255,255,255,0.3)",textTransform:"uppercase",marginBottom:20,marginTop:6}}>Hijack the feed.</p>
+          <p style={{fontSize:16,color:"#9ca3af",lineHeight:1.7,maxWidth:460,margin:"0 auto 0"}}>The attention economy is a bloodsport. Scrolljack gives you the tools to stop the thumb, steal the moment, and make every pixel fight for a click.</p>
         </div>
 
         {/* ── Hero card: Flick ── */}
@@ -1421,7 +1423,7 @@ function HomePage({onSelect}){
             <div style={{flex:1,padding:isWide?"32px 36px":"20px 20px",display:"flex",flexDirection:"column",justifyContent:"center",gap:12}}>
               <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
                 <span style={{fontSize:22}}>{flick.icon}</span>
-                <span style={{fontSize:isWide?28:22,fontWeight:900,letterSpacing:"-0.5px",color:hov===flick.id?"#c4b5fd":"#f0f0f8",transition:"color 0.15s"}}>{flick.name}</span>
+                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:isWide?36:26,fontWeight:400,letterSpacing:"0.06em",color:hov===flick.id?"#c4b5fd":"#f0f0f8",transition:"color 0.15s"}}>{flick.name}</span>
                 <span style={{fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:flick.color,background:flick.color+"22",padding:"3px 8px",borderRadius:5,border:`1px solid ${flick.color}44`}}>{flick.tag}</span>
               </div>
               <p style={{fontSize:isWide?14:12,color:"#6b7280",lineHeight:1.7,margin:0,maxWidth:400}}>{DESCS.flick}</p>
@@ -1448,7 +1450,7 @@ function HomePage({onSelect}){
                 <div style={{flex:1,padding:"16px 18px",display:"flex",flexDirection:"column",justifyContent:"center",gap:6}}>
                   <div style={{display:"flex",alignItems:"center",gap:7}}>
                     <span style={{fontSize:14}}>{app.icon}</span>
-                    <span style={{fontSize:15,fontWeight:900,letterSpacing:"-0.2px",color:hov===app.id?app.color:"#e8e8f2",transition:"color 0.15s"}}>{app.name}</span>
+                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,fontWeight:400,letterSpacing:"0.06em",color:hov===app.id?app.color:"#e8e8f2",transition:"color 0.15s"}}>{app.name}</span>
                     <span style={{fontSize:8,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:app.color,background:app.color+"18",padding:"2px 6px",borderRadius:4}}>{app.tag}</span>
                   </div>
                   <p style={{fontSize:11,color:"#5b6470",lineHeight:1.5,margin:0}}>{DESCS[app.id]}</p>
@@ -1460,8 +1462,21 @@ function HomePage({onSelect}){
         </div>
 
         {/* ── Footer tagline ── */}
-        <p style={{textAlign:"center",marginTop:36,fontSize:11,color:"#374151",lineHeight:1.6}}>
-          Free to use · No account required · Export ready for Instagram, TikTok & Facebook
+        {/* Three column manifesto */}
+        <div style={{display:"grid",gridTemplateColumns:isWide?"1fr 1fr 1fr":"1fr",gap:24,marginTop:60,paddingTop:40,borderTop:"1px solid rgba(255,255,255,0.07)"}}>
+          {[
+            {h:"Attention is the only currency.",body:"Likes don't pay rent. Reach doesn't close deals. The only thing that matters is the moment the thumb stops — and what happens in the three seconds after. Scrolljack is built for that moment."},
+            {h:"Tools for the disruptors.",body:"We didn't build another drag-and-drop timeline editor. We built five weapons for people who'd rather move fast and test everything than spend a week in a design tool making something beautiful that no one watches."},
+            {h:"The feed rewards the brave.",body:"Safe content disappears. Polished content gets skipped. The ads that work are the ones that feel wrong in exactly the right way — too loud, too bold, too direct. Make those. We'll handle the export."},
+          ].map((col,i)=>(
+            <div key={i} style={{display:"flex",flexDirection:"column",gap:10}}>
+              <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,fontWeight:400,letterSpacing:"0.08em",color:"#e8e8f2",lineHeight:1.1,margin:0}}>{col.h}</h2>
+              <p style={{fontSize:13,color:"#6b7280",lineHeight:1.75,margin:0}}>{col.body}</p>
+            </div>
+          ))}
+        </div>
+        <p style={{textAlign:"center",marginTop:32,fontSize:10,color:"#374151",lineHeight:1.6}}>
+          Free · No account · Export ready for Instagram, TikTok & Facebook
         </p>
       </div>
     </div>
@@ -1564,8 +1579,7 @@ function Root(){
     <div style={{minHeight:"100vh",background:C.bg,display:"flex",flexDirection:"column"}}>
       <header style={{position:"sticky",top:0,zIndex:100,height:52,display:"flex",alignItems:"center",padding:"0 16px",gap:10,background:"#0d0d14",backdropFilter:"blur(16px)",borderBottom:"1px solid rgba(255,255,255,0.07)",flexShrink:0}}>
         <button onClick={()=>setActiveApp(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0}}>
-          <div style={{width:28,height:28,borderRadius:7,background:"linear-gradient(135deg,#7c3aed,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,boxShadow:"0 0 12px rgba(124,58,237,0.35)"}}>⚡</div>
-          <span style={{fontWeight:900,fontSize:15,letterSpacing:"-0.4px",color:C.text}}>Scrolljack</span>
+          <img src={LOGO_URL} alt="Scrolljack" style={{height:22}}/>
         </button>
         {activeApp&&(
           <>
