@@ -786,13 +786,13 @@ function FlickApp(){
           <span style={{width:6,height:6,borderRadius:"50%",background:"#0ea5e9",flexShrink:0,display:"inline-block"}}/>
           CTA Link
           <span style={{fontSize:8,color:"#6b7280",fontWeight:500,marginLeft:2,fontFamily:"Inter,sans-serif"}}>optional</span>
-          <button onClick={()=>{setShowCta(p=>!p);setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:showCta?"rgba(14,165,233,0.5)":"rgba(0,0,0,0.1)",background:showCta?"rgba(14,165,233,0.12)":"rgba(0,0,0,0.03)",color:showCta?"#0ea5e9":"#6b7280",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+          <button onClick={()=>{setShowCta(p=>{const v=!p;overlayRef.current={...overlayRef.current,showCta:v};setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},20);return v});setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:showCta?"rgba(14,165,233,0.5)":"rgba(0,0,0,0.1)",background:showCta?"rgba(14,165,233,0.12)":"rgba(0,0,0,0.03)",color:showCta?"#0ea5e9":"#6b7280",fontSize:10,fontWeight:700,cursor:"pointer"}}>
             {showCta?"✓ On":"+ Add"}
           </button>
         </div>
         {showCta&&(
           <div style={{display:"flex",flexDirection:"column",gap:6}}>
-            <input value={ctaText} onChange={e=>{setCtaText(e.target.value);setBlob(null)}} placeholder="e.g. Shop now · botanica.com" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"#f5f5fa",border:"1px solid rgba(0,0,0,0.08)",color:"#111118",fontSize:13,outline:"none",fontFamily:"'Poppins',sans-serif"}}/>
+            <input value={ctaText} onChange={e=>{setCtaText(e.target.value);setBlob(null);overlayRef.current={...overlayRef.current,ctaText:e.target.value}}} placeholder="e.g. Shop now · botanica.com" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"#f5f5fa",border:"1px solid rgba(0,0,0,0.08)",color:"#111118",fontSize:13,outline:"none",fontFamily:"'Poppins',sans-serif"}}/>
             <p style={{fontSize:9,color:"#9ca3af",margin:0}}>Appears as a small underlined link at the bottom centre of the video.</p>
           </div>
         )}
