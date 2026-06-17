@@ -3,7 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Flick Suite — Make Ads in Seconds</title>
+<title>Adrush — Make Social Media Ads in Seconds | Free Ad Creation Tools</title>
+<meta name="description" content="Adrush is a free suite of social media ad creation tools. Create stunning brand ads, testimonial videos, hook ads, before-and-after reveals and sale promos in seconds. No design skills needed.">
+<meta name="keywords" content="social media ad creator, free ad maker, Instagram ad tool, TikTok ad creator, Facebook ad maker, brand video maker, testimonial video, before after video, hook ads, promo video maker, social media marketing tools, ad creation software, video ad generator, ecommerce ads, Shopify ad maker">
+<meta name="author" content="Adrush">
+<meta name="robots" content="index, follow">
+<meta property="og:title" content="Adrush — Make Social Media Ads in Seconds">
+<meta property="og:description" content="Five purpose-built ad creation tools for social media marketers, founders and Shopify brands. Create brand ads, testimonials, hooks, reveals and promos in seconds.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://adkit-git-main-stephenkington-makers-projects.vercel.app">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Adrush — Make Social Media Ads in Seconds">
+<meta name="twitter:description" content="Free tools to create brand ads, testimonials, hook videos, before-and-after reveals and sale promos for Instagram, TikTok and Facebook.">
+<link rel="canonical" href="https://adkit-git-main-stephenkington-makers-projects.vercel.app">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
@@ -41,7 +53,7 @@ const {useState,useRef,useEffect,useCallback}=React;
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const FPS=30;
 const BG_MS=250;
-const RATIOS=[{label:"3:4",key:"3x4",w:900,h:1200},{label:"4:5",key:"4x5",w:960,h:1200},{label:"9:16",key:"9x16",w:675,h:1200}];
+const RATIOS=[{label:"1:1",key:"1x1",w:1080,h:1080},{label:"3:4",key:"3x4",w:900,h:1200},{label:"4:5",key:"4x5",w:960,h:1200},{label:"9:16",key:"9x16",w:675,h:1200}];
 const SLIDE_FRAMES=FPS*3;
 const HOOK_FRAMES=FPS*4;
 const DROP_FRAMES=FPS*5;
@@ -64,6 +76,8 @@ const APPS=[
   {id:"reveal", name:"Reveal", icon:"✦", color:C.emerald,tag:"B&A"},
   {id:"drop",   name:"Drop",   icon:"🔥",color:C.red,    tag:"Promo"},
 ];
+const BRAND="Adrush";
+const DURATIONS=[5,8,10,15,20]; // seconds
 
 // ─── FONTS & COLOURS ──────────────────────────────────────────────────────────
 const GFONTS=[
@@ -241,11 +255,14 @@ function FontColorPicker({font,setFont,color,setColor,accent}){
 // ─── APP: FLICK ───────────────────────────────────────────────────────────────
 function FlickApp(){
   const[logo,setLogo]=useState(null);
+  const[logoColor,setLogoColor]=useState(""); // empty = no tint
+  const[isSvg,setIsSvg]=useState(false);
   const[bgs,setBgs]=useState([]);
   const[ratio,setRatio]=useState("9x16");
   const[loops,setLoops]=useState(1);
+  const[duration,setDuration]=useState(8); // seconds
   const[audio,setAudio]=useState(null);
-  const[playing,setPlaying]=useState(false);
+  const[playing,setPlaying]=useState(true);
   const[curBg,setCurBg]=useState(0);
   const[logoScale,setLogoScale]=useState(55);
   const[lx,setLx]=useState(50);
@@ -294,7 +311,7 @@ function FlickApp(){
   const R=RATIOS.find(r=>r.key===ratio);
 
   useEffect(()=>{posRef.current={x:lx,y:ly,s:logoScale}},[lx,ly,logoScale]);
-  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos]);
+  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos]);
   useEffect(()=>{if(!logo){logoRef.current=null;return}loadImg(logo).then(i=>logoRef.current=i)},[logo]);
   useEffect(()=>{bgRefs.current=new Array(bgs.length).fill(null);bgs.forEach((src,i)=>loadImg(src).then(im=>bgRefs.current[i]=im))},[bgs]);
 
@@ -350,6 +367,17 @@ function FlickApp(){
         const lw=lg.width*sf,lh=lg.height*sf;
         const lx_=W*lp.x/100-lw/2,ly_=H*lp.y/100-lh/2;
         ctx.drawImage(lg,lx_,ly_,lw,lh);
+        // Colour tint for SVG logos
+        if(ov.logoColor){
+          ctx.save();
+          ctx.globalCompositeOperation="source-atop";
+          // Draw logo again to get its alpha mask, then fill with colour
+          const tmp=document.createElement("canvas");tmp.width=W;tmp.height=H;
+          const tc=tmp.getContext("2d");tc.drawImage(lg,lx_,ly_,lw,lh);
+          tc.globalCompositeOperation="source-in";tc.fillStyle=ov.logoColor;tc.fillRect(lx_,ly_,lw,lh);
+          ctx.drawImage(tmp,0,0);
+          ctx.restore();
+        }
         guide(lx_,ly_,lw,lh,"logo");
       }
     }
@@ -389,7 +417,7 @@ function FlickApp(){
 
   useEffect(()=>{
     if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60);
-  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,drawFrame,playing]);
+  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,drawFrame,playing]);
 
   // Multi-element drag system
   useEffect(()=>{
@@ -491,8 +519,8 @@ function FlickApp(){
   },[]);
 
   const framesPerBg=Math.round((BG_MS/1000)*FPS);
-  const totalFrames=loops*bgs.length*framesPerBg;
-  const totalDurSec=totalFrames/FPS;
+  const totalFrames=Math.round(duration*FPS);
+  const totalDurSec=duration;
   const renderFn=useCallback((canvas,f)=>drawFrame(canvas,Math.floor(f/framesPerBg)%bgs.length,null),[drawFrame,framesPerBg,bgs.length]);
 
   // Custom export with optional audio muxing
@@ -608,8 +636,14 @@ function FlickApp(){
     setTimeout(()=>URL.revokeObjectURL(u),2000);
   },[blob,ratio,loops,audio]);
 
-  const dur=((bgs.length*loops*BG_MS)/1000).toFixed(1);
+  // dur now from duration state
   const canExp=(overlayMode==="text"?textLine.trim().length>0:!!logo)&&bgs.length>0&&!exporting;
+  const[renderWarn,setRenderWarn]=useState("");
+  // Spacebar toggles play/pause
+  useEffect(()=>{
+    const onKey=e=>{if(e.code==="Space"&&e.target===document.body){e.preventDefault();setPlaying(p=>!p)}};
+    window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey);
+  },[]);
   // Keep logoScale in sync with logoPos.s for slider display
   useEffect(()=>{setLogoPos(p=>({...p,s:logoScale}))},[logoScale]);
   const R2=RATIOS.find(r=>r.key===ratio);
@@ -670,7 +704,7 @@ function FlickApp(){
         {/* Logo upload */}
         {overlayMode==="logo"&&(
           <>
-            <DZ id="fl-logo" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setLogo(d);setBlob(null)}} dragColor="rgba(124,58,237,0.7)">
+            <DZ id="fl-logo" accept="image/*" onFiles={async f=>{const file=f[0];const d=await readFile(file);setLogo(d);setIsSvg(file.type==="image/svg+xml"||file.name.endsWith(".svg"));setLogoColor("");setBlob(null)}} dragColor="rgba(124,58,237,0.7)">
               {logo?<div style={{display:"flex",alignItems:"center",gap:12,padding:"4px 0"}}><img src={logo} style={{maxWidth:80,maxHeight:48,objectFit:"contain",filter:"drop-shadow(0 0 10px rgba(124,58,237,0.5))"}} alt=""/><div><div style={{fontSize:12,color:"#c4b5fd",fontWeight:600}}>Logo uploaded</div><div style={{fontSize:10,color:"#6b7280",marginTop:2}}>Click to replace</div></div></div>:<><div style={{fontSize:22,opacity:0.2,marginBottom:5}}>⊕</div><div style={{fontSize:13,color:"#9ca3af"}}>Drop or click — PNG / SVG</div><div style={{fontSize:10,color:"#4b5563",marginTop:2}}>Transparent background recommended</div></>}
             </DZ>
             {logo&&<div style={{display:"flex",alignItems:"center",gap:10,marginTop:8}}>
@@ -678,6 +712,20 @@ function FlickApp(){
               <input type="range" min="5" max="95" value={logoScale} onChange={e=>{setLogoScale(Number(e.target.value));setBlob(null)}}/>
               <span style={{fontSize:10,color:"#9ca3af",flexShrink:0,width:26,textAlign:"right"}}>{logoScale}%</span>
             </div>}
+            {logo&&isSvg&&(
+              <div style={{marginTop:10,padding:"10px 12px",borderRadius:9,background:"rgba(124,58,237,0.06)",border:"1px solid rgba(124,58,237,0.15)"}}>
+                <div style={{fontSize:9,fontWeight:700,color:"#9ca3af",letterSpacing:"0.1em",textTransform:"uppercase",marginBottom:7}}>SVG Colour Override</div>
+                <div style={{display:"flex",flexWrap:"wrap",gap:5,marginBottom:6}}>
+                  {["","#ffffff","#000000","#7c3aed","#ec4899","#0ea5e9","#f59e0b","#10b981","#ef4444","#f97316","#fbbf24","#e879f9"].map(c=>(
+                    <button key={c||"orig"} onClick={()=>{setLogoColor(c);setBlob(null)}} style={{width:c?22:36,height:22,borderRadius:5,background:c||"linear-gradient(135deg,#7c3aed,#ec4899)",border:"none",cursor:"pointer",outline:logoColor===c?"2px solid #a78bfa":"2px solid transparent",outlineOffset:1,flexShrink:0,fontSize:c?0:8,color:"#fff",fontWeight:700,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                      {!c&&"orig"}
+                    </button>
+                  ))}
+                  <input type="color" value={logoColor||"#ffffff"} onChange={e=>{setLogoColor(e.target.value);setBlob(null)}} style={{width:26,height:22,border:"none",background:"none",cursor:"pointer",padding:0,borderRadius:4,flexShrink:0}}/>
+                </div>
+                <p style={{fontSize:9,color:"#6b7280",lineHeight:1.5}}>Pick "orig" to use the SVG's original colours.</p>
+              </div>
+            )}
           </>
         )}
         {/* Text headline */}
@@ -772,9 +820,9 @@ function FlickApp(){
             <div style={{display:"flex",gap:6}}>{RATIOS.map(r=><Pill key={r.key} active={ratio===r.key} onClick={()=>{setRatio(r.key);setBlob(null)}}>{r.label}</Pill>)}</div>
           </div>
           <div>
-            <div style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Loops</div>
-            <div style={{display:"flex",gap:5}}>{[1,2,3,4,5].map(n=><Pill key={n} active={loops===n} color="#8b5cf6" onClick={()=>{setLoops(n);setBlob(null)}}>{n}×</Pill>)}</div>
-            {bgs.length>0&&<p style={{fontSize:10,color:"#6b7280",marginTop:6}}>≈ {dur}s total export</p>}
+            <div style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Duration</div>
+            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{DURATIONS.map(d=><Pill key={d} active={duration===d} color="#8b5cf6" onClick={()=>{setDuration(d);setBlob(null)}}>{d}s</Pill>)}</div>
+            {bgs.length>0&&<p style={{fontSize:10,color:"#6b7280",marginTop:6}}>≈ {duration}s · {Math.max(1,Math.round(duration/(bgs.length*BG_MS/1000)))} loops</p>}
           </div>
         </div>
       </div>
@@ -810,7 +858,7 @@ function FlickApp(){
   return isDesktop?(
     <div style={{display:"flex",height:"calc(100vh - 100px)",overflow:"hidden",width:"100%"}}>
       {/* LEFT — Preview 50% */}
-      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"16px",borderRight:"1px solid rgba(255,255,255,0.07)",gap:10,overflow:"hidden",background:"rgba(0,0,0,0.12)"}}>
+      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"5%",borderRight:"1px solid rgba(255,255,255,0.07)",gap:10,overflow:"hidden",background:"rgba(0,0,0,0.12)"}}>
         {/* Preview header */}
         <div style={{width:previewW,maxWidth:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <span style={{fontSize:11,fontWeight:700,color:activeEl?"#c4b5fd":"#6b7280",letterSpacing:"0.06em",textTransform:"uppercase"}}>
@@ -836,12 +884,18 @@ function FlickApp(){
         </div>
         {/* Sticky render button at bottom */}
         <div style={{flexShrink:0,padding:"12px 20px 16px",borderTop:"1px solid rgba(255,255,255,0.07)",background:"#090910"}}>
-          <button onClick={()=>run(R2.w,R2.h)} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"14px",borderRadius:10,border:"none",background:exporting?"rgba(255,255,255,0.05)":undefined,color:"#fff",fontSize:14,fontWeight:800,cursor:exporting?"not-allowed":"pointer",boxShadow:!exporting?"0 0 28px rgba(200,40,200,0.35)":"none",transition:"all 0.18s"}}>
+          {renderWarn&&<p style={{fontSize:11,color:"#ef4444",textAlign:"center",marginBottom:4,fontWeight:600}}>{renderWarn}</p>}
+          <button onClick={()=>{
+            if(bgs.length===0){setRenderWarn("Add background images first");return}
+            if(overlayMode==="logo"&&!logo){setRenderWarn("Upload a logo first");return}
+            if(overlayMode==="text"&&!textLine.trim()){setRenderWarn("Enter some text first");return}
+            setRenderWarn("");run(R2.w,R2.h);
+          }} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"14px",borderRadius:10,border:"none",background:exporting?"rgba(255,255,255,0.05)":undefined,color:"#fff",fontSize:14,fontWeight:800,cursor:exporting?"not-allowed":"pointer",boxShadow:!exporting?"0 0 28px rgba(200,40,200,0.35)":"none",transition:"all 0.18s"}}>
             {exporting?(exportStatus||`Rendering… ${prog}%`):"⚙ Render Video"}
           </button>
           {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(255,255,255,0.06)",overflow:"hidden",marginTop:6}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
           {blob&&!exporting&&<button onClick={download} style={{width:"100%",padding:"13px",borderRadius:10,border:"1px solid rgba(52,211,153,0.4)",background:"rgba(52,211,153,0.08)",color:"#6ee7b7",fontSize:14,fontWeight:800,cursor:"pointer",marginTop:8,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {audio?"Video + Audio":""} .webm · {blob?(blob.size/1024/1024).toFixed(1):0} MB</button>}
-          {!exporting&&!blob&&<p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginTop:6,lineHeight:1.5}}>
+          {!exporting&&!blob&&!renderWarn&&<p style={{fontSize:10,color:"#6b7280",textAlign:"center",marginTop:6,lineHeight:1.5}}>
             {bgs.length===0?"Add background images first":!logo&&overlayMode==="logo"?"Upload a logo first":"Ready to render"}
           </p>}
         </div>
@@ -919,9 +973,10 @@ function ProofApp(){
   const[tmpl,setTmpl]=useState("dark");
   const[proofFont,setProofFont]=useState("Inter");
   const[proofColor,setProofColor]=useState("#f0f0f8");
-  const[playing,setPlaying]=useState(false);
+  const[playing,setPlaying]=useState(true);
   const[curFrame,setCurFrame]=useState(0);
   const[editIdx,setEditIdx]=useState(null);
+  const[audio,setAudio]=useState(null);
   const[editBuf,setEditBuf]=useState({text:"",author:"",handle:"",stars:5});
   const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
   const total=items.length*SLIDE_FRAMES;
@@ -934,8 +989,23 @@ function ProofApp(){
   const save=()=>{if(editIdx===null)return;const n=[...items];n[editIdx]={...editBuf};setItems(n);setEditIdx(null);setBlob(null)};
   const IS={width:"100%",padding:"8px 10px",borderRadius:8,background:"rgba(255,255,255,0.04)",border:"1px solid rgba(255,255,255,0.1)",color:C.text,fontSize:12,outline:"none",marginTop:4};
   const curSlide=Math.floor(curFrame/SLIDE_FRAMES);
-  return(
-    <div style={{display:"flex",flexDirection:"column",gap:20}}>
+  const isDesktop=window.innerWidth>=900;
+  const PW=675,PH=1200;
+  const pH2=isDesktop?Math.min(window.innerHeight-140,(window.innerWidth*0.5-40)*PH/PW):(window.innerWidth-32)*PH/PW;
+  const pW2=Math.round(pH2*PW/PH);
+  return isDesktop?(
+    <div style={{display:"flex",height:"calc(100vh - 100px)",overflow:"hidden"}}>
+      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,padding:"5%",borderRight:"1px solid rgba(255,255,255,0.07)",background:"rgba(0,0,0,0.12)"}}>
+        <div style={{width:pW2,display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:"#6b7280",letterSpacing:"0.06em",textTransform:"uppercase"}}>Preview</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.blue}/></div>
+        <div style={{position:"relative",borderRadius:14,overflow:"hidden",boxShadow:"0 0 0 1px rgba(255,255,255,0.1),0 24px 80px rgba(0,0,0,0.8)",background:"#22223a",width:pW2,height:pH2,flexShrink:0}}>
+          <canvas ref={prevRef} width={PW} height={PH} style={{width:pW2,height:pH2,display:"block"}}/>
+          {!items.length&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.92)"}}><div style={{fontSize:32,opacity:0.1}}>★</div><p style={{fontSize:12,color:"#4b5563",margin:0}}>Add testimonials to preview</p></div>}
+        </div>
+        <div style={{display:"flex",gap:3,justifyContent:"center",width:pW2}}>{items.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:curSlide===i&&playing?"#0ea5e9":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>
+        <div style={{width:pW2}}><ExportArea disabled={!items.length||exporting} onRender={()=>run(PW,PH)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/></div>
+      </div>
+      <div style={{flex:"0 0 50%",display:"flex",flexDirection:"column",overflow:"hidden"}}>
+        <div style={{flex:1,overflowY:"auto",padding:"16px 20px",display:"flex",flexDirection:"column",gap:16}}>
       <div>
         <SLabel n="01" title={`Testimonials (${items.length})`} color={C.blue}/>
         <div style={{display:"flex",flexDirection:"column",gap:5}}>
@@ -966,12 +1036,23 @@ function ProofApp(){
           </div>
         </div>
       )}
+      <div>
+        <SLabel n="04" title="Audio" color={C.green} opt/>
+        {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="pf-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:C.muted}}>♪ Drop MP3 / WAV — optional</div></DZ>}
+      </div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>Preview</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.blue}/></div>
         <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!items.length} emptyIcon="★" emptyText="Add testimonials to preview"/>
         <div style={{display:"flex",gap:3,justifyContent:"center"}}>{items.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:curSlide===i&&playing?"#0ea5e9":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>
       </div>
-      <ExportArea disabled={!items.length||exporting} onRender={()=>run(675,1200)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+        </div>
+        <div style={{flexShrink:0,padding:"12px 20px 16px",borderTop:"1px solid rgba(255,255,255,0.07)",background:"#090910"}}><ExportArea disabled={!items.length||exporting} onRender={()=>run(PW,PH)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>{!items.length&&<Hint>Add at least one testimonial</Hint>}</div>
+      </div>
+    </div>
+  ):(
+    <div style={{display:"flex",flexDirection:"column",gap:20,padding:"20px 16px 60px"}}>
+      <ExportArea disabled={!items.length||exporting} onRender={()=>run(PW,PH)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+      <PreviewCanvas canvasRef={prevRef} W={PW} H={PH} empty={!items.length} emptyIcon="★" emptyText="Add testimonials"/>
       {!items.length&&<Hint>Add at least one testimonial</Hint>}
     </div>
   );
@@ -1012,8 +1093,9 @@ function HookApp(){
   const[img,setImg]=useState(null);
   const[sel,setSel]=useState(new Set(["nobody","wish","easiest"]));
   const[actH,setActH]=useState(0);
-  const[playing,setPlaying]=useState(false);
+  const[playing,setPlaying]=useState(true);
   const[hookFont,setHookFont]=useState("Inter");
+  const[audio,setAudio]=useState(null);
   const[hookColor,setHookColor]=useState("#f0f0f8");
   const imgRef=useRef(null);const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
   const active=HOOK_LIST.filter(h=>sel.has(h.id));
@@ -1048,6 +1130,10 @@ function HookApp(){
         </div>
       </div>
       <div><SLabel n="04" title="Font & Colour" color="#fbbf24"/><FontColorPicker font={hookFont} setFont={f=>{setHookFont(f);setBlob(null)}} color={hookColor} setColor={c=>{setHookColor(c);setBlob(null)}} accent={C.amber}/></div>
+      <div>
+        <SLabel n="05" title="Audio" color={C.green} opt/>
+        {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="hk-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:C.muted}}>♪ Drop MP3 / WAV — optional</div></DZ>}
+      </div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>Hook {actH+1} / {active.length}</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.amber}/></div>
         <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!active.length} emptyIcon="🎣" emptyText="Select hooks to preview"/>
@@ -1079,7 +1165,8 @@ function drawReveal(canvas,before,after,style,frame,fontFam,fontColor){
 }
 
 function RevealApp(){
-  const[before,setBefore]=useState(null);const[after,setAfter]=useState(null);const[style,setStyle]=useState("swipe");const[playing,setPlaying]=useState(false);
+  const[before,setBefore]=useState(null);const[after,setAfter]=useState(null);const[style,setStyle]=useState("swipe");const[playing,setPlaying]=useState(true);
+  const[audio,setAudio]=useState(null);
   const[revFont,setRevFont]=useState("Inter");const[revColor,setRevColor]=useState("#ffffff");
   const bRef=useRef(null);const aRef=useRef(null);const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
   useEffect(()=>{if(before)loadImg(before).then(i=>bRef.current=i)},[before]);
@@ -1112,6 +1199,10 @@ function RevealApp(){
         </div>
       </div>
       <div><SLabel n="03" title="Font & Colour" color={C.emerald}/><FontColorPicker font={revFont} setFont={f=>{setRevFont(f);setBlob(null)}} color={revColor} setColor={c=>{setRevColor(c);setBlob(null)}} accent={C.emerald}/></div>
+      <div>
+        <SLabel n="04" title="Audio" color={C.green} opt/>
+        {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="rv-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:C.muted}}>♪ Drop MP3 / WAV — optional</div></DZ>}
+      </div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>{REVEAL_STYLES.find(s=>s.id===style)?.label} · 3s</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.emerald}/></div>
         <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!before||!after} emptyIcon="✦" emptyText="Upload before & after images"/>
@@ -1146,7 +1237,8 @@ function drawDrop(canvas,imgEl,orig,sale,headline,style,frame,fontFam,fontColor)
 }
 
 function DropApp(){
-  const[img,setImg]=useState(null);const[orig,setOrig]=useState("99");const[sale,setSale]=useState("49");const[headline,setHeadline]=useState("Limited Time Deal");const[style,setStyle]=useState("urgency");const[playing,setPlaying]=useState(false);
+  const[img,setImg]=useState(null);const[orig,setOrig]=useState("99");const[sale,setSale]=useState("49");const[headline,setHeadline]=useState("Limited Time Deal");const[style,setStyle]=useState("urgency");const[playing,setPlaying]=useState(true);
+  const[audio,setAudio]=useState(null);
   const[dropFont,setDropFont]=useState("Inter");const[dropColor,setDropColor]=useState("#f8f8fc");
   const imgRef=useRef(null);const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
   useEffect(()=>{if(!img){imgRef.current=null;return}loadImg(img).then(i=>imgRef.current=i)},[img]);
@@ -1187,6 +1279,10 @@ function DropApp(){
         </div>
       </div>
       <div><SLabel n="05" title="Font & Colour" color="#f97316"/><FontColorPicker font={dropFont} setFont={f=>{setDropFont(f);setBlob(null)}} color={dropColor} setColor={c=>{setDropColor(c);setBlob(null)}} accent={C.red}/></div>
+      <div>
+        <SLabel n="06" title="Audio" color={C.green} opt/>
+        {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="dp-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:C.muted}}>♪ Drop MP3 / WAV — optional</div></DZ>}
+      </div>
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}><span style={{fontSize:11,fontWeight:700,color:C.muted,letterSpacing:"0.06em",textTransform:"uppercase"}}>{DROP_AD_STYLES.find(s=>s.id===style)?.label} · 5s</span><PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)} color={C.red}/></div>
         <PreviewCanvas canvasRef={prevRef} W={675} H={1200} empty={!sale} emptyIcon="🔥" emptyText="Enter a sale price to preview"/>
@@ -1297,9 +1393,9 @@ function HomePage({onSelect}){
         <div style={{textAlign:"center",marginBottom:32}}>
           <div style={{width:48,height:48,borderRadius:13,background:"linear-gradient(135deg,#7c3aed,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,margin:"0 auto 16px",boxShadow:"0 0 28px rgba(124,58,237,0.4)"}}>⚡</div>
           <h1 style={{fontSize:"clamp(30px,7vw,50px)",fontWeight:900,letterSpacing:"-1.5px",lineHeight:1.06,marginBottom:10}}>
-            Make Ads<br/><span style={{background:"linear-gradient(90deg,#7c3aed,#ec4899 55%,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>in Seconds</span>
+            <span style={{background:"linear-gradient(90deg,#7c3aed,#ec4899 55%,#f59e0b)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Adrush</span>
           </h1>
-          <p style={{fontSize:14,color:C.muted,lineHeight:1.6,maxWidth:340,margin:"0 auto"}}>Purpose built tools. No timelines. No bloat.</p>
+          <p style={{fontSize:14,color:C.muted,lineHeight:1.6,maxWidth:340,margin:"0 auto"}}>Purpose built ad tools for social media. No timelines. No bloat.</p>
         </div>
         <div style={{display:"flex",flexDirection:"column",gap:10}}>
           {APPS.map(app=>(
@@ -1402,7 +1498,7 @@ function ContactForm({open,onClose}){
 function SponsorBanner({onOpen}){
   const[hov,setHov]=useState(false);
   return(
-    <div style={{width:"100%",flexShrink:0,background:"linear-gradient(90deg,#3b0764 0%,#6d1a8a 25%,#9d1a6a 55%,#c2185b 80%,#e91e8c 100%)",borderTop:"1px solid rgba(124,58,237,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
+    <div style={{width:"100%",flexShrink:0,background:"#1e1e2a",borderTop:"1px solid rgba(124,58,237,0.25)",padding:"10px 20px",display:"flex",alignItems:"center",justifyContent:"space-between",gap:12,flexWrap:"wrap"}}>
       <div style={{display:"flex",alignItems:"center",gap:10,minWidth:0}}>
         <div style={{width:6,height:6,borderRadius:"50%",background:"#7c3aed",boxShadow:"0 0 6px #7c3aed",flexShrink:0}}/>
         <span style={{fontSize:11,color:"#6b7280",fontWeight:500,flexShrink:0}}>Sponsorship</span>
@@ -1426,8 +1522,7 @@ function Root(){
       <header style={{position:"sticky",top:0,zIndex:100,height:52,display:"flex",alignItems:"center",padding:"0 16px",gap:10,background:"rgba(9,9,16,0.95)",backdropFilter:"blur(16px)",borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
         <button onClick={()=>setActiveApp(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0}}>
           <div style={{width:28,height:28,borderRadius:7,background:"linear-gradient(135deg,#7c3aed,#ec4899)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:13,boxShadow:"0 0 12px rgba(124,58,237,0.35)"}}>⚡</div>
-          <span style={{fontWeight:900,fontSize:15,letterSpacing:"-0.4px",color:C.text}}>Flick</span>
-          <span style={{fontSize:9,fontWeight:700,letterSpacing:"0.1em",background:"rgba(124,58,237,0.14)",color:"#c4b5fd",padding:"2px 7px",borderRadius:99,border:"1px solid rgba(124,58,237,0.22)",textTransform:"uppercase"}}>Suite</span>
+          <span style={{fontWeight:900,fontSize:15,letterSpacing:"-0.4px",color:C.text}}>Adrush</span>
         </button>
         {activeApp&&(
           <>
