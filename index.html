@@ -1108,11 +1108,25 @@ function parseParts(text){
   return parts.length?parts:[{t:text,h:false}];
 }
 
-function drawProof(canvas,items,frame,tmplKey,fontFam,fontColor){
+function drawProof(canvas,items,frame,tmplKey,fontFam,fontColor,bgImg,bgVid,logoImg){
   const ctx=canvas.getContext("2d");const{width:W,height:H}=canvas;
   const tm=PROOF_TMPLS.find(t=>t.k===tmplKey)||PROOF_TMPLS[0];
   const fam=ff(fontFam||"Inter");
-  ctx.clearRect(0,0,W,H);ctx.fillStyle=tm.bg;ctx.fillRect(0,0,W,H);
+  ctx.clearRect(0,0,W,H);
+  // Background: image/video or colour
+  if(bgVid&&!bgVid.paused&&bgVid.readyState>=2){
+    const s=Math.max(W/bgVid.videoWidth,H/bgVid.videoHeight);
+    const sw=bgVid.videoWidth*s,sh=bgVid.videoHeight*s;
+    ctx.drawImage(bgVid,(W-sw)/2,(H-sh)/2,sw,sh);
+    ctx.fillStyle="rgba(0,0,0,0.45)";ctx.fillRect(0,0,W,H);
+  } else if(bgImg&&bgImg.complete&&bgImg.naturalWidth){
+    const s=Math.max(W/bgImg.naturalWidth,H/bgImg.naturalHeight);
+    const sw=bgImg.naturalWidth*s,sh=bgImg.naturalHeight*s;
+    ctx.drawImage(bgImg,(W-sw)/2,(H-sh)/2,sw,sh);
+    ctx.fillStyle="rgba(0,0,0,0.45)";ctx.fillRect(0,0,W,H);
+  } else {
+    ctx.fillStyle=tm.bg;ctx.fillRect(0,0,W,H);
+  }
   if(!items.length)return;
   const idx=Math.min(Math.floor(frame/SLIDE_FRAMES),items.length-1);
   const sf=frame%SLIDE_FRAMES,pr=sf/SLIDE_FRAMES;
@@ -1135,6 +1149,12 @@ function drawProof(canvas,items,frame,tmplKey,fontFam,fontColor){
   const dr=Math.round(W*0.018),dotY=H*0.92,dw=items.length*dr*3;let dx=(W-dw)/2;
   items.forEach((_,di)=>{ctx.beginPath();ctx.arc(dx+dr,dotY,di===idx?dr*1.2:dr*0.7,0,Math.PI*2);ctx.fillStyle=di===idx?"#0ea5e9":`${tm.fg}44`;ctx.fill();dx+=dr*3});
   ctx.restore();ctx.globalAlpha=1;
+  // Logo: small, bottom-left
+  if(logoImg&&logoImg.complete&&logoImg.naturalWidth){
+    const lh=Math.round(H*0.055),lw=Math.round(lh*logoImg.naturalWidth/logoImg.naturalHeight);
+    const lx=W*0.06,ly=H*0.88;
+    ctx.globalAlpha=0.85;ctx.drawImage(logoImg,lx,ly,lw,lh);ctx.globalAlpha=1;
+  }
 }
 
 const DEFAULT_REVIEWS=[
@@ -1151,18 +1171,26 @@ function ProofApp(){
   const[curFrame,setCurFrame]=useState(0);
   const[editIdx,setEditIdx]=useState(null);
   const[audio,setAudio]=useState(null);
+  const[proofBgImg,setProofBgImg]=useState(null);
+  const[proofBgVid,setProofBgVid]=useState(null);
+  const[proofLogo,setProofLogo]=useState(null);
+  const proofBgImgRef=useRef(null);
+  const proofBgVidRef=useRef(null);
+  const proofLogoRef=useRef(null);
   const[editBuf,setEditBuf]=useState({text:"",author:"",handle:"",stars:5});
   const prevRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
   const total=items.length*SLIDE_FRAMES;
-  const renderFn=useCallback((canvas,f)=>drawProof(canvas,items,f,tmpl,proofFont,proofColor),[items,tmpl,proofFont,proofColor]);
+  const renderFn=useCallback((canvas,f)=>drawProof(canvas,items,f,tmpl,proofFont,proofColor,proofBgImgRef.current,proofBgVidRef.current,proofLogoRef.current),[items,tmpl,proofFont,proofColor,proofBgImg,proofBgVid,proofLogo]);
   const{run,download,prog,exporting,blob,setBlob}=useExport(renderFn,total,"proof.webm");
-  const drawPrev=useCallback(f=>{if(prevRef.current)drawProof(prevRef.current,items,f%Math.max(total,1),tmpl,proofFont,proofColor)},[items,tmpl,total,proofFont,proofColor]);
+  const drawPrev=useCallback(f=>{if(prevRef.current)drawProof(prevRef.current,items,f%Math.max(total,1),tmpl,proofFont,proofColor,proofBgImgRef.current,proofBgVidRef.current,proofLogoRef.current)},[items,tmpl,total,proofFont,proofColor,proofBgImg,proofBgVid,proofLogo]);
   const runPrev=useCallback(()=>{const loop=ts=>{if(!startRef.current)startRef.current=ts;const f=Math.floor(((ts-startRef.current)/1000)*FPS);setCurFrame(f);drawPrev(f);animRef.current=requestAnimationFrame(loop)};animRef.current=requestAnimationFrame(loop)},[drawPrev]);
   useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(0),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
-  useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[items,tmpl,proofFont,proofColor,drawPrev,playing]);
+  useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[items,tmpl,proofFont,proofColor,proofBgImg,proofBgVid,proofLogo,drawPrev,playing]);
   const save=()=>{if(editIdx===null)return;const n=[...items];n[editIdx]={...editBuf};setItems(n);setEditIdx(null);setBlob(null)};
   const IS={width:"100%",padding:"8px 10px",borderRadius:8,background:"#f0f0f5",border:"1px solid rgba(0,0,0,0.1)",color:C.text,fontSize:12,outline:"none",marginTop:4};
   const curSlide=Math.floor(curFrame/SLIDE_FRAMES);
+  // Expose state for global timeline
+  useEffect(()=>{window.__proofState={items,curSlide,playing,total};return()=>{delete window.__proofState}},[items,curSlide,playing,total]);
   const isDesktop=window.innerWidth>=900;
   const PW=675,PH=1200;
   const proofLeft=(
@@ -1188,6 +1216,24 @@ function ProofApp(){
         <SLabel n="03" title="Font & Colour" color="#a78bfa"/>
         <FontColorPicker font={proofFont} setFont={f=>{setProofFont(f);setBlob(null)}} color={proofColor} setColor={c=>{setProofColor(c);setBlob(null)}} accent={C.blue}/>
       </div>
+      <div className="card-white" style={{padding:"12px 14px"}}>
+        <SLabel n="04" title="Background" color="#6366f1" opt/>
+        <div style={{display:"flex",gap:6,marginBottom:6}}>
+          <DZ id="pf-bgimg" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setProofBgImg(d);const i=new Image();i.onload=()=>{proofBgImgRef.current=i;setProofBgVid(null);proofBgVidRef.current=null};i.src=d}} dragColor="rgba(99,102,241,0.6)" compact style={{flex:1}}>
+            {proofBgImg?<div style={{display:"flex",alignItems:"center",gap:6}}><img src={proofBgImg} style={{width:36,height:36,objectFit:"cover",borderRadius:5}} alt=""/><span style={{fontSize:11,color:"#6366f1"}}>Image ✓</span></div>:<span style={{fontSize:11,color:"#9ca3af"}}>📷 Drop image</span>}
+          </DZ>
+          <DZ id="pf-bgvid" accept="video/*" onFiles={f=>{const file=f[0];const u=URL.createObjectURL(file);const v=document.createElement("video");v.src=u;v.loop=true;v.muted=true;v.playsInline=true;v.play();proofBgVidRef.current=v;setProofBgVid(u);setProofBgImg(null);proofBgImgRef.current=null}} dragColor="rgba(99,102,241,0.6)" compact style={{flex:1}}>
+            {proofBgVid?<div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:16}}>🎬</span><span style={{fontSize:11,color:"#6366f1"}}>Video ✓</span></div>:<span style={{fontSize:11,color:"#9ca3af"}}>🎬 Drop video</span>}
+          </DZ>
+        </div>
+        {(proofBgImg||proofBgVid)&&<button onClick={()=>{setProofBgImg(null);setProofBgVid(null);proofBgImgRef.current=null;proofBgVidRef.current=null}} style={{fontSize:10,color:"#ef4444",background:"none",border:"none",cursor:"pointer",padding:0}}>✕ Remove background</button>}
+      </div>
+      <div className="card-white" style={{padding:"12px 14px"}}>
+        <SLabel n="05" title="Logo" color="#8b5cf6" opt/>
+        <DZ id="pf-logo" accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setProofLogo(d);const i=new Image();i.onload=()=>proofLogoRef.current=i;i.src=d}} dragColor="rgba(139,92,246,0.6)" compact>
+          {proofLogo?<div style={{display:"flex",alignItems:"center",gap:8}}><img src={proofLogo} style={{maxWidth:80,maxHeight:32,objectFit:"contain"}} alt=""/><span style={{fontSize:11,color:"#8b5cf6"}}>Tap to replace</span></div>:<span style={{fontSize:11,color:"#9ca3af"}}>🏷 Drop logo PNG/SVG — shows bottom-left</span>}
+        </DZ>
+      </div>
       {editIdx!==null&&(
         <div style={{padding:"14px",borderRadius:12,border:"1px solid rgba(14,165,233,0.3)",background:"rgba(14,165,233,0.06)"}}>
           <div style={{fontSize:11,fontWeight:800,color:C.blue,marginBottom:10}}>EDITING</div>
@@ -1205,7 +1251,7 @@ function ProofApp(){
   );
   const proofRight=(
     <div className="card-white" style={{padding:"12px 14px"}}>
-      <SLabel n="04" title="Audio" color={C.green} opt/>
+      <SLabel n="06" title="Audio" color={C.green} opt/>
       {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="pf-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:"#9ca3af"}}>♪ Drop MP3 / WAV</div></DZ>}
     </div>
   );
@@ -1272,6 +1318,7 @@ function HookApp(){
   useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[name,img,sel,hookFont,hookColor,drawPrev,playing]);
   const toggle=id=>{setSel(s=>{const n=new Set(s);n.has(id)?n.delete(id):n.add(id);return n});setBlob(null)};
   const canExp=active.length>0&&name.trim().length>0&&!exporting;
+  useEffect(()=>{window.__hookState={active,actH,playing};return()=>{delete window.__hookState}},[active,actH,playing]);
   const isDesktop=window.innerWidth>=900;
   const PW=675,PH=1200;
   const hookLeft=(
@@ -1359,6 +1406,7 @@ function RevealApp(){
   useEffect(()=>{if(playing){startRef.current=null;runPrev()}else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>drawPrev(0),60)}return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)}},[playing,runPrev,drawPrev]);
   useEffect(()=>{if(!playing)setTimeout(()=>drawPrev(0),60)},[before,after,style,revFont,revColor,drawPrev,playing]);
   const canExp=before&&after&&!exporting;
+  useEffect(()=>{window.__revealState={style,playing};return()=>{delete window.__revealState}},[style,playing]);
   const ImgBox=({id,label,value,setter})=>(
     <div style={{flex:1}}><div style={{fontSize:10,color:C.muted,fontWeight:600,marginBottom:4,textAlign:"center"}}>{label}</div>
       <DZ id={id} accept="image/*" onFiles={async f=>{const d=await readFile(f[0]);setter(d);setBlob(null)}} dragColor="rgba(16,185,129,0.6)" compact>
@@ -1821,6 +1869,49 @@ function FlickTimeline(){
   );
 }
 
+// ─── PROOF TIMELINE ──────────────────────────────────────────────────────────
+function ProofTimeline(){
+  const[state,setState]=useState(null);
+  useEffect(()=>{const iv=setInterval(()=>{if(window.__proofState)setState({...window.__proofState})},100);return()=>clearInterval(iv)},[]);
+  if(!state)return null;
+  const{items,curSlide,playing}=state;
+  return(
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"rgba(15,15,20,0.96)",backdropFilter:"blur(12px)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"8px 16px 10px",display:"flex",alignItems:"center",gap:12}}>
+      <span style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.35)",letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Timeline</span>
+      <div style={{flex:1,display:"flex",gap:3,overflowX:"auto",alignItems:"center"}}>
+        {items.length>0?items.map((_,i)=>(
+          <div key={i} style={{flexShrink:0,height:38,minWidth:48,borderRadius:6,background:curSlide===i&&playing?"rgba(14,165,233,0.3)":"rgba(255,255,255,0.06)",border:curSlide===i&&playing?"2px solid #0ea5e9":"2px solid rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.1s",padding:"0 8px"}}>
+            <span style={{fontSize:9,color:curSlide===i&&playing?"#7dd3fc":"rgba(255,255,255,0.4)",fontWeight:700}}>Slide {i+1}</span>
+          </div>
+        )):<span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>Add testimonials to see timeline</span>}
+      </div>
+      <span style={{fontSize:9,color:"rgba(255,255,255,0.35)",flexShrink:0}}>{curSlide+1}/{items.length}</span>
+    </div>
+  );
+}
+
+// ─── MINI TIMELINES (Hook / Reveal / Drop) ───────────────────────────────────
+function MiniTimeline({stateKey,slots,color}){
+  const[state,setState]=useState(null);
+  useEffect(()=>{const iv=setInterval(()=>{if(window[stateKey])setState({...window[stateKey]})},100);return()=>clearInterval(iv)},[stateKey]);
+  if(!state)return null;
+  return(
+    <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"rgba(15,15,20,0.96)",backdropFilter:"blur(12px)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"8px 16px 10px",display:"flex",alignItems:"center",gap:12}}>
+      <span style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.35)",letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Timeline</span>
+      <div style={{flex:1,display:"flex",gap:3,overflowX:"auto",alignItems:"center"}}>
+        {slots(state).map((slot,i)=>(
+          <div key={i} style={{flexShrink:0,height:38,minWidth:52,borderRadius:6,background:slot.active?"rgba("+color+",0.25)":"rgba(255,255,255,0.06)",border:slot.active?"2px solid rgba("+color+",1)":"2px solid rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",padding:"0 8px",transition:"all 0.1s"}}>
+            <span style={{fontSize:9,color:slot.active?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.4)",fontWeight:700}}>{slot.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+function HookTimeline(){return<MiniTimeline stateKey="__hookState" color="245,158,11" slots={s=>s.active.map((_,i)=>({label:`Hook ${i+1}`,active:s.actH===i&&s.playing}))}/>}
+function RevealTimeline(){return<MiniTimeline stateKey="__revealState" color="16,185,129" slots={s=>[{label:"Before",active:!s.playing},{label:"→ Reveal",active:s.playing},{label:"After",active:false}]}/>}
+function DropTimeline(){return<MiniTimeline stateKey="__dropState" color="239,68,68" slots={s=>[{label:"Intro",active:s.playing},{label:"Price",active:s.playing},{label:"CTA",active:s.playing}]}/>}
+
 // ─── ROOT ─────────────────────────────────────────────────────────────────────
 function Root(){
   const[activeApp,setActiveApp]=useState(null);
@@ -1867,6 +1958,10 @@ function Root(){
       </div>
       {/* Global timeline bar — fixed to bottom, only when in an app */}
       {activeApp==="flick"&&<FlickTimeline/>}
+      {activeApp==="proof"&&<ProofTimeline/>}
+      {activeApp==="hook"&&<HookTimeline/>}
+      {activeApp==="reveal"&&<RevealTimeline/>}
+      {activeApp==="drop"&&<DropTimeline/>}
       <ContactForm open={contactOpen} onClose={()=>setContactOpen(false)}/>
     </div>
   );
