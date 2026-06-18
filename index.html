@@ -315,7 +315,19 @@ function FlickApp(){
   useEffect(()=>{posRef.current={x:lx,y:ly,s:logoScale}},[lx,ly,logoScale]);
   useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos]);
   useEffect(()=>{if(!logo){logoRef.current=null;return}loadImg(logo).then(i=>logoRef.current=i)},[logo]);
-  useEffect(()=>{bgRefs.current=new Array(bgs.length).fill(null);bgs.forEach((src,i)=>loadImg(src).then(im=>bgRefs.current[i]=im))},[bgs]);
+  useEffect(()=>{
+    bgRefs.current=new Array(bgs.length).fill(null);
+    let loaded=0;
+    bgs.forEach((src,i)=>loadImg(src).then(im=>{
+      bgRefs.current[i]=im;
+      loaded++;
+      // Once all loaded, restart preview loop so frames render correctly
+      if(loaded===bgs.length){
+        if(playing){startRef.current=null;bgIdxRef.current=0;if(animRef.current)cancelAnimationFrame(animRef.current);runPreview();}
+        else if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current);
+      }
+    }));
+  },[bgs]);
 
   const drawFrame=useCallback((canvas,bgIdx,activeElArg)=>{
     const ctx=canvas.getContext("2d");
@@ -720,11 +732,7 @@ function FlickApp(){
       {/* Scene dots */}
       {bgs.length>0&&!editMode&&<div style={{display:"flex",gap:4,flexWrap:"wrap",justifyContent:"center"}}>{bgs.map((_,i)=><div key={i} style={{width:16,height:3,borderRadius:99,background:curBg===i&&playing?"#7c3aed":"rgba(255,255,255,0.12)",transition:"background 0.1s"}}/>)}</div>}
       {/* Export — shown below preview on desktop */}
-      {isDesktop&&<div style={{marginTop:4}}>
-        <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
-        {!canExp&&bgs.length>0&&<Hint>{overlayMode==="logo"?"Upload a logo":"Enter some text"} to export</Hint>}
-        {bgs.length===0&&<Hint>Add background images to export</Hint>}
-      </div>}
+      {/* Render button is above the preview canvas */}
     </div>
   );
 
@@ -1040,7 +1048,7 @@ function FlickApp(){
         </div>
         {bgs.length>0&&!editMode&&<div style={{display:"flex",gap:3,flexWrap:"wrap",justifyContent:"center"}}>{bgs.map((_,i)=><div key={i} style={{width:14,height:3,borderRadius:99,background:curBg===i&&playing?"#7c3aed":"rgba(255,255,255,0.1)",transition:"background 0.1s"}}/>)}</div>}
       </div>
-      <ExportArea disabled={!canExp} onRender={()=>run(R2.w,R2.h)} exporting={exporting} prog={prog} blob={blob} onDownload={download} label=".webm"/>
+      
     </div>
   );
 }
