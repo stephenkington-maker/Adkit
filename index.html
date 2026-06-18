@@ -1484,8 +1484,8 @@ const _demoBgImgs=PLANT_BGS.slice(0,6).map(src=>{const i=new Image();i.src=src;r
 
 function drawFlickDemo(canvas,t){
   const ctx=canvas.getContext("2d");const W=canvas.width,H=canvas.height;
-  // Cycle through plant backgrounds every 800ms
-  const bgIdx=Math.floor(t/800)%_demoBgImgs.length;
+  // Cycle through plant backgrounds every 250ms — same as the app (BG_MS=250)
+  const bgIdx=Math.floor(t/250)%_demoBgImgs.length;
   const bg=_demoBgImgs[bgIdx];
   ctx.clearRect(0,0,W,H);
   if(bg&&bg.complete&&bg.naturalWidth){
