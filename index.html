@@ -1060,16 +1060,16 @@ function ThreeColLayout({left,centre,right,accentColor,canExport,onRender,export
         </div>
       </div>
       {/* CENTRE — preview with render button above */}
-      <div style={{...col,flex:1.2,background:"#e8e8f0",alignItems:"center",justifyContent:"flex-start",padding:"14px 12px 12px",gap:8}}>
+      <div style={{...col,flex:1.2,background:"#e8e8f0",alignItems:"center",justifyContent:"flex-start",padding:"16px 12px 12px",gap:8}}>
         {/* Render button — always visible above preview */}
         <div style={{width:"100%",flexShrink:0}}>
-          {warnText&&<p style={{fontSize:10,color:"#ef4444",textAlign:"center",marginBottom:5,fontWeight:600}}>⚠ {warnText}</p>}
-          <button onClick={onRender} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"11px",borderRadius:10,border:"2px solid rgba(0,0,0,0.18)",background:exporting?"rgba(0,0,0,0.06)":undefined,color:"#fff",fontSize:13,fontWeight:800,cursor:exporting?"not-allowed":"pointer",letterSpacing:"0.04em",boxShadow:!exporting?"0 2px 16px rgba(124,58,237,0.25)":"none",transition:"all 0.18s",opacity:exporting?0.6:1}}>
+          {warnText&&<p style={{fontSize:11,color:"#ef4444",textAlign:"center",marginBottom:6,fontWeight:600}}>⚠ {warnText}</p>}
+          <button onClick={onRender} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"15px",borderRadius:12,border:"2px solid rgba(0,0,0,0.18)",background:exporting?"rgba(0,0,0,0.06)":undefined,color:"#fff",fontSize:14,fontWeight:800,cursor:exporting?"not-allowed":"pointer",letterSpacing:"0.02em",boxShadow:!exporting?"0 4px 24px rgba(124,58,237,0.35)":"none",transition:"all 0.18s",opacity:exporting?0.6:1}}>
             {exporting?(exportStatus||`Rendering… ${prog}%`):"⚙ Render Video"}
           </button>
-          {exporting&&<div style={{height:2,borderRadius:99,background:"rgba(0,0,0,0.1)",overflow:"hidden",marginTop:5}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
-          {blob&&!exporting&&<button onClick={onDownload} style={{width:"100%",padding:"9px",borderRadius:9,border:"1px solid rgba(52,211,153,0.5)",background:"rgba(52,211,153,0.1)",color:"#059669",fontSize:12,fontWeight:800,cursor:"pointer",marginTop:5,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {downloadLabel}</button>}
-          {!exporting&&!blob&&!warnText&&<p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:4}}>{exportHint||"Ready to render"}</p>}
+          {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(0,0,0,0.08)",overflow:"hidden",marginTop:8}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
+          {blob&&!exporting&&<button onClick={onDownload} style={{width:"100%",padding:"13px",borderRadius:12,border:"1px solid rgba(52,211,153,0.5)",background:"rgba(52,211,153,0.1)",color:"#059669",fontSize:13,fontWeight:800,cursor:"pointer",marginTop:8,animation:"pulseGreen 1.6s ease-in-out infinite",letterSpacing:"0.02em"}}>↓ Download {downloadLabel}</button>}
+          {!exporting&&!blob&&!warnText&&<p style={{fontSize:10,color:"#9ca3af",textAlign:"center",marginTop:8}}>{exportHint||"Ready to render"}</p>}
         </div>
         {centre}
       </div>
@@ -1083,21 +1083,21 @@ function ThreeColLayout({left,centre,right,accentColor,canExport,onRender,export
   );
 }
 
-// Helper: standard canvas preview for centre col
-function CentrePreview({canvasRef,PW,PH,playing,onToggle,accentColor,empty,emptyIcon,emptyText,dots,dotsActive}){
-  const isD=window.innerWidth>=900;
+// Helper: standard canvas preview — identical sizing logic to FlickApp centre col
+function CentrePreview({canvasRef,PW,PH,playing,onToggle,accentColor,empty,emptyIcon,emptyText,dots}){
+  // Match Flick exactly: 38% col width minus 3% outer padding on each side, reserve 132px for render btn + dots + padding
+  const centreColW=window.innerWidth*0.38;
   const availH=window.innerHeight-106-132;
-  const byH=Math.round(availH*PW/PH);
-  const byW=Math.round(window.innerWidth*0.38-24);
-  const pW=Math.min(byH,byW);
+  const byH3=Math.round(availH*PW/PH);
+  const pW=Math.min(byH3,Math.round(centreColW-24));
   const pH=Math.round(pW*PH/PW);
   return(
     <>
-      <div style={{width:pW,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
+      <div style={{width:pW,maxWidth:"100%",display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
         <span style={{fontSize:10,fontWeight:700,color:"#9ca3af",letterSpacing:"0.08em",textTransform:"uppercase"}}>Preview</span>
         <PlayBtn playing={playing} onToggle={onToggle} color={accentColor}/>
       </div>
-      <div style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.08)",background:"#22223a",width:pW,height:pH,flexShrink:0}}>
+      <div style={{position:"relative",borderRadius:12,overflow:"hidden",boxShadow:"0 8px 40px rgba(0,0,0,0.25),0 0 0 1px rgba(0,0,0,0.08)",background:"#22223a",width:pW,height:pH,flexShrink:0,cursor:"default"}}>
         <canvas ref={canvasRef} width={PW} height={PH} style={{width:pW,height:pH,display:"block"}}/>
         {empty&&<div style={{position:"absolute",inset:0,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:8,background:"rgba(9,9,16,0.94)"}}><div style={{fontSize:36,opacity:0.08}}>{emptyIcon}</div><p style={{fontSize:12,color:"#6b7280",margin:0,textAlign:"center",padding:"0 20px",lineHeight:1.6}}>{emptyText}</p></div>}
       </div>
