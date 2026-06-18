@@ -338,26 +338,38 @@ function FlickApp(){
       ctx.restore();
     };
 
+    // Safe zone: centred square — all content lives inside this
+    const sz=safeZone(W,H);
+    const szX=px=>sz.x+px/100*sz.w;
+    const szY=py=>sz.y+py/100*sz.h;
+    const szW=pct=>pct/100*sz.w;
+
+    // Safe zone outline guide in edit mode
+    if(activeElArg!==null){
+      ctx.save();ctx.strokeStyle="rgba(255,255,255,0.12)";ctx.lineWidth=1;
+      ctx.setLineDash([4,4]);ctx.strokeRect(sz.x,sz.y,sz.w,sz.h);ctx.setLineDash([]);ctx.restore();
+    }
+
     // Emoji
     if(ov.emoji){
-      const ep=ov.emojiPos;const fs=Math.round(W*(ov.emojiSize/100)*0.1);
+      const ep=ov.emojiPos;const fs=Math.round(sz.w*(ov.emojiSize/100)*0.1);
       ctx.font=`${fs}px Arial`;ctx.textAlign="center";ctx.textBaseline="middle";
-      ctx.fillText(ov.emoji,W*ep.x/100,H*ep.y/100);
-      guide(W*ep.x/100-fs/2,H*ep.y/100-fs/2,fs,fs,"emoji");
+      ctx.fillText(ov.emoji,szX(ep.x),szY(ep.y));
+      guide(szX(ep.x)-fs/2,szY(ep.y)-fs/2,fs,fs,"emoji");
       ctx.textAlign="left";ctx.textBaseline="alphabetic";
     }
 
     // Main text (headline)
     if(ov.mode==="text"&&ov.text){
-      const tp=ov.textPos;const fs=Math.round(W*(ov.size/100)*0.12);
+      const tp=ov.textPos;const fs=Math.round(sz.w*(ov.size/100)*0.12);
       ctx.font=`900 ${fs}px ${ff(ov.font)}`;ctx.fillStyle=ov.color;
       ctx.textAlign="center";ctx.textBaseline="middle";
       const words=ov.text.split(" ");let lines=[],cur="";
-      words.forEach(w=>{const t2=cur?cur+" "+w:w;if(ctx.measureText(t2).width>W*0.86&&cur){lines.push(cur);cur=w}else cur=t2});
+      words.forEach(w=>{const t2=cur?cur+" "+w:w;if(ctx.measureText(t2).width>sz.w*0.86&&cur){lines.push(cur);cur=w}else cur=t2});
       if(cur)lines.push(cur);
-      const totalH=lines.length*fs*1.3;const sx=W*tp.x/100;const sy=H*tp.y/100-totalH/2+fs/2;
+      const totalH=lines.length*fs*1.3;const sx=szX(tp.x);const sy=szY(tp.y)-totalH/2+fs/2;
       lines.forEach((l,i)=>ctx.fillText(l,sx,sy+i*fs*1.3));
-      guide(sx-W*ov.size/100/2,H*tp.y/100-totalH/2-6,W*ov.size/100,totalH+12,"text");
+      guide(sx-szW(ov.size)/2,szY(tp.y)-totalH/2-6,szW(ov.size),totalH+12,"text");
       ctx.textAlign="left";ctx.textBaseline="alphabetic";
     }
 
@@ -365,50 +377,46 @@ function FlickApp(){
     if(ov.mode==="logo"){
       const lp=ov.logoPos;const lg=logoRef.current;
       if(lg){
-        const mw=W*(lp.s/100);const sf=Math.min(mw/lg.width,(H*0.8)/lg.height);
+        const mw=szW(lp.s);const sf=Math.min(mw/lg.width,(sz.h*0.8)/lg.height);
         const lw=lg.width*sf,lh=lg.height*sf;
-        const lx_=W*lp.x/100-lw/2,ly_=H*lp.y/100-lh/2;
+        const lx_=szX(lp.x)-lw/2,ly_=szY(lp.y)-lh/2;
         ctx.drawImage(lg,lx_,ly_,lw,lh);
-        // Colour tint for SVG logos
         if(ov.logoColor){
-          ctx.save();
-          ctx.globalCompositeOperation="source-atop";
-          // Draw logo again to get its alpha mask, then fill with colour
+          ctx.save();ctx.globalCompositeOperation="source-atop";
           const tmp=document.createElement("canvas");tmp.width=W;tmp.height=H;
           const tc=tmp.getContext("2d");tc.drawImage(lg,lx_,ly_,lw,lh);
           tc.globalCompositeOperation="source-in";tc.fillStyle=ov.logoColor;tc.fillRect(lx_,ly_,lw,lh);
-          ctx.drawImage(tmp,0,0);
-          ctx.restore();
+          ctx.drawImage(tmp,0,0);ctx.restore();
         }
         guide(lx_,ly_,lw,lh,"logo");
       }
     }
 
-    // CTA link text — bottom centre
-    if(ov.showCta&&ov.ctaText){
-      const fs=Math.round(W*0.032);
-      ctx.font=`500 ${fs}px 'Poppins',sans-serif`;
-      ctx.fillStyle="rgba(255,255,255,0.75)";
-      ctx.textAlign="center";ctx.textBaseline="middle";
-      // Underline effect
-      const tw=ctx.measureText(ov.ctaText).width;
-      ctx.fillText(ov.ctaText,W*0.5,H*0.91);
-      ctx.strokeStyle="rgba(255,255,255,0.45)";ctx.lineWidth=0.8;
-      ctx.beginPath();ctx.moveTo(W*0.5-tw/2,H*0.915);ctx.lineTo(W*0.5+tw/2,H*0.915);ctx.stroke();
-      ctx.textAlign="left";ctx.textBaseline="alphabetic";
-    }
-
     // Subline
     if(ov.subline){
-      const sp=ov.subPos;const fs=Math.round(W*(ov.subSize/100)*0.08);
+      const sp=ov.subPos;const fs=Math.round(sz.w*(ov.subSize/100)*0.08);
       ctx.font=`400 ${fs}px 'Poppins',sans-serif`;ctx.fillStyle=ov.subColor;
       ctx.textAlign="center";ctx.textBaseline="middle";
       const words=ov.subline.split(" ");let lines=[],cur="";
-      words.forEach(w=>{const t2=cur?cur+" "+w:w;if(ctx.measureText(t2).width>W*0.82&&cur){lines.push(cur);cur=w}else cur=t2});
+      words.forEach(w=>{const t2=cur?cur+" "+w:w;if(ctx.measureText(t2).width>sz.w*0.82&&cur){lines.push(cur);cur=w}else cur=t2});
       if(cur)lines.push(cur);
-      const totalH=lines.length*fs*1.5;const sx=W*sp.x/100;const sy=H*sp.y/100-totalH/2+fs/2;
+      const totalH=lines.length*fs*1.5;const sx=szX(sp.x);const sy=szY(sp.y)-totalH/2+fs/2;
       lines.forEach((l,i)=>ctx.fillText(l,sx,sy+i*fs*1.5));
-      guide(sx-W*0.45,H*sp.y/100-totalH/2-4,W*0.9,totalH+8,"sub");
+      guide(sx-szW(45),szY(sp.y)-totalH/2-4,szW(90),totalH+8,"sub");
+      ctx.textAlign="left";ctx.textBaseline="alphabetic";
+    }
+
+    // CTA link text — bottom of safe zone
+    if(ov.showCta&&ov.ctaText){
+      const fs=Math.round(sz.w*0.032);
+      ctx.font=`500 ${fs}px 'Poppins',sans-serif`;
+      ctx.fillStyle="rgba(255,255,255,0.75)";
+      ctx.textAlign="center";ctx.textBaseline="middle";
+      const tw=ctx.measureText(ov.ctaText).width;
+      const ctaY=szY(91);
+      ctx.fillText(ov.ctaText,szX(50),ctaY);
+      ctx.strokeStyle="rgba(255,255,255,0.45)";ctx.lineWidth=0.8;
+      ctx.beginPath();ctx.moveTo(szX(50)-tw/2,ctaY+fs*0.6);ctx.lineTo(szX(50)+tw/2,ctaY+fs*0.6);ctx.stroke();
       ctx.textAlign="left";ctx.textBaseline="alphabetic";
     }
   },[]);
@@ -1112,6 +1120,7 @@ function drawProof(canvas,items,frame,tmplKey,fontFam,fontColor,bgImg,bgVid,logo
   const ctx=canvas.getContext("2d");const{width:W,height:H}=canvas;
   const tm=PROOF_TMPLS.find(t=>t.k===tmplKey)||PROOF_TMPLS[0];
   const fam=ff(fontFam||"Inter");
+  const sz=safeZone(W,H);
   ctx.clearRect(0,0,W,H);
   // Background: image/video or colour
   if(bgVid&&!bgVid.paused&&bgVid.readyState>=2){
@@ -1134,10 +1143,10 @@ function drawProof(canvas,items,frame,tmplKey,fontFam,fontColor,bgImg,bgVid,logo
   const alpha=Math.min(fadeIn,fadeOut),slideY=(1-Math.min(1,pr*4))*28;
   const item=items[idx];
   ctx.globalAlpha=alpha;ctx.save();ctx.translate(0,slideY);
-  ctx.font=`bold ${Math.round(W*0.12)}px Georgia,serif`;ctx.fillStyle=fontColor||tm.fg;ctx.globalAlpha=alpha*0.07;ctx.fillText('"',W*0.08,H*0.24);ctx.globalAlpha=alpha;
+  ctx.font=`bold ${Math.round(sz.w*0.12)}px Georgia,serif`;ctx.fillStyle=fontColor||tm.fg;ctx.globalAlpha=alpha*0.07;ctx.fillText('"',sz.x+sz.w*0.08,sz.y+sz.h*0.24);ctx.globalAlpha=alpha;
   const parts=parseParts(item.text);
-  const fs=Math.round(W*0.042),lh=fs*1.55,maxW=W*0.82;
-  let x=W*0.09,y=H*0.32;
+  const fs=Math.round(sz.w*0.042),lh=fs*1.55,maxW=sz.w*0.82;
+  let x=sz.x+sz.w*0.09,y=sz.y+sz.h*0.32;
   const tokens=[];parts.forEach(p=>p.t.split(" ").forEach(w=>{if(w)tokens.push({w:w+" ",h:p.h})}));
   let lineT=[],lineW=0;
   const renderLine=(toks,ly)=>{let lx=x;toks.forEach(tok=>{ctx.font=`${tok.h?"800":"600"} ${fs}px ${fam}`;if(tok.h){ctx.fillStyle="#fbbf24";ctx.fillRect(lx-2,ly-fs*0.84,ctx.measureText(tok.w.trimEnd()).width+4,fs*1.08);ctx.fillStyle="#111"}else ctx.fillStyle=fontColor||tm.fg;ctx.fillText(tok.w,lx,ly);lx+=ctx.measureText(tok.w).width})};
@@ -1146,7 +1155,7 @@ function drawProof(canvas,items,frame,tmplKey,fontFam,fontColor,bgImg,bgVid,logo
   const stars=item.stars||5;ctx.font=`${Math.round(W*0.032)}px Arial`;ctx.fillStyle="#fbbf24";ctx.fillText("★".repeat(stars)+"☆".repeat(5-stars),x,y);y+=lh*1.2;
   ctx.font=`700 ${Math.round(fs*0.85)}px ${fam}`;ctx.fillStyle=fontColor||tm.fg;ctx.fillText(`— ${item.author}`,x,y);
   if(item.handle){ctx.font=`500 ${Math.round(fs*0.75)}px ${fam}`;ctx.fillStyle=tm.sub;ctx.fillText(item.handle,x,y+lh*0.9)}
-  const dr=Math.round(W*0.018),dotY=H*0.92,dw=items.length*dr*3;let dx=(W-dw)/2;
+  const dr=Math.round(sz.w*0.018),dotY=sz.y+sz.h*0.92,dw=items.length*dr*3;let dx=sz.x+(sz.w-dw)/2;
   items.forEach((_,di)=>{ctx.beginPath();ctx.arc(dx+dr,dotY,di===idx?dr*1.2:dr*0.7,0,Math.PI*2);ctx.fillStyle=di===idx?"#0ea5e9":`${tm.fg}44`;ctx.fill();dx+=dr*3});
   ctx.restore();ctx.globalAlpha=1;
   // Logo: small, bottom-left
