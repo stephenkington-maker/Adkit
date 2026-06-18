@@ -1478,15 +1478,37 @@ function DropApp(){
 }
 
 // ─── HOME DEMO CANVASES ───────────────────────────────────────────────────────
+// Preload Botanica logo + plant BGs for homepage demo
+const _demoLogoImg=(()=>{const i=new Image();i.src=DEMO_LOGO;return i})();
+const _demoBgImgs=PLANT_BGS.slice(0,6).map(src=>{const i=new Image();i.src=src;return i});
+
 function drawFlickDemo(canvas,t){
   const ctx=canvas.getContext("2d");const W=canvas.width,H=canvas.height;
-  const COLORS=["#1a0533","#0a1a3a","#0a2a1a","#2a0a0a","#1a1a0a","#0a0a2a"];
-  const idx=Math.floor(t/250)%COLORS.length;
-  ctx.fillStyle=COLORS[idx];ctx.fillRect(0,0,W,H);
-  ctx.globalAlpha=0.22;ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
-  const lw=W*0.55,lh=H*0.14;const lx=(W-lw)/2,ly=(H-lh)/2;
-  ctx.fillStyle="rgba(255,255,255,0.92)";ctx.beginPath();ctx.roundRect(lx,ly,lw,lh,lh*0.25);ctx.fill();
-  ctx.fillStyle="#111";ctx.font=`900 ${Math.round(lh*0.46)}px Inter,system-ui,sans-serif`;ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("YOUR LOGO",W/2,H/2);ctx.textAlign="left";ctx.textBaseline="alphabetic";
+  // Cycle through plant backgrounds every 800ms
+  const bgIdx=Math.floor(t/800)%_demoBgImgs.length;
+  const bg=_demoBgImgs[bgIdx];
+  ctx.clearRect(0,0,W,H);
+  if(bg&&bg.complete&&bg.naturalWidth){
+    const s=Math.max(W/bg.naturalWidth,H/bg.naturalHeight);
+    const sw=bg.naturalWidth*s,sh=bg.naturalHeight*s;
+    ctx.drawImage(bg,(W-sw)/2,(H-sh)/2,sw,sh);
+  } else {
+    ctx.fillStyle="#0a2a12";ctx.fillRect(0,0,W,H);
+  }
+  // Dark overlay
+  ctx.globalAlpha=0.3;ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
+  // Botanica wordmark
+  if(_demoLogoImg.complete&&_demoLogoImg.naturalWidth){
+    const lw=W*0.78,lh=lw*(260/1200);
+    const lx=(W-lw)/2,ly=H*0.42-lh/2;
+    ctx.drawImage(_demoLogoImg,lx,ly,lw,lh);
+  }
+  // Subline
+  const fs=Math.round(W*0.055);
+  ctx.font=`400 ${fs}px 'Cormorant Garamond',Georgia,serif`;
+  ctx.fillStyle="rgba(241,233,214,0.78)";ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.fillText("Grown with intention.",W/2,H*0.58);
+  ctx.textAlign="left";ctx.textBaseline="alphabetic";
 }
 
 function drawProofDemo(canvas,elapsed){
