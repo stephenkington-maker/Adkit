@@ -1550,8 +1550,9 @@ const _demoBgImgs=PLANT_BGS.slice(0,6).map(src=>{const i=new Image();i.src=src;r
 function drawFlickDemo(canvas,t){
   const ctx=canvas.getContext("2d");const W=canvas.width,H=canvas.height;
   // Cycle through plant backgrounds every 250ms — same as the app (BG_MS=250)
-  const bgIdx=Math.floor(t/250)%_demoBgImgs.length;
-  const bg=_demoBgImgs[bgIdx];
+  const n=_demoBgImgs.length;
+  const bgIdx=n>0?Math.floor(t/250)%n:0;
+  const bg=n>0?_demoBgImgs[bgIdx]:null;
   ctx.clearRect(0,0,W,H);
   if(bg&&bg.complete&&bg.naturalWidth){
     const s=Math.max(W/bg.naturalWidth,H/bg.naturalHeight);
@@ -1638,9 +1639,15 @@ function DemoCanvas({drawFn}){
   const canvasRef=useRef(null);const animRef=useRef(null);const startRef=useRef(null);
   useEffect(()=>{
     const canvas=canvasRef.current;if(!canvas)return;
-    const loop=ts=>{if(!startRef.current)startRef.current=ts;drawFn(canvas,ts-startRef.current);animRef.current=requestAnimationFrame(loop)};
+    let stopped=false;
+    const loop=ts=>{
+      if(stopped)return;
+      if(!startRef.current)startRef.current=ts;
+      try{drawFn(canvas,ts-startRef.current)}catch(e){/* skip a bad frame, keep the loop alive */}
+      animRef.current=requestAnimationFrame(loop);
+    };
     animRef.current=requestAnimationFrame(loop);
-    return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)};
+    return()=>{stopped=true;if(animRef.current)cancelAnimationFrame(animRef.current)};
   },[drawFn]);
   return <canvas ref={canvasRef} width={270} height={480} style={{width:"100%",height:"100%",display:"block",borderRadius:"inherit"}}/>;
 }
