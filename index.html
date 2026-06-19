@@ -48,6 +48,18 @@ const {useState,useRef,useEffect,useCallback}=React;
 // ─── CONSTANTS ────────────────────────────────────────────────────────────────
 const FPS=30;
 const BG_MS=250;
+// Returns the centred square "safe zone" inside a W×H canvas, so that all
+// overlay content (logo/text/subline/etc) stays fully visible regardless
+// of the export aspect ratio. Background images still fill the full W×H.
+function safeZone(W,H){
+  const size=Math.min(W,H);
+  return{
+    x:(W-size)/2,
+    y:(H-size)/2,
+    w:size,
+    h:size
+  };
+}
 const RATIOS=[{label:"1:1",key:"1x1",w:1080,h:1080},{label:"3:4",key:"3x4",w:900,h:1200},{label:"4:5",key:"4x5",w:960,h:1200},{label:"9:16",key:"9x16",w:675,h:1200}];
 const SLIDE_FRAMES=FPS*3;
 const HOOK_FRAMES=FPS*4;
@@ -442,7 +454,9 @@ function FlickApp(){
       const el=ts-startRef.current;const cnt=Math.max(bgs.length,1);
       const i=Math.floor(el/BG_MS)%cnt;
       if(i!==bgIdxRef.current){bgIdxRef.current=i;setCurBg(i)}
-      if(prevRef.current)drawFrame(prevRef.current,i,activeElRef.current);
+      try{
+        if(prevRef.current)drawFrame(prevRef.current,i,activeElRef.current);
+      }catch(e){/* never let a bad frame kill the animation loop */}
       animRef.current=requestAnimationFrame(loop);
     };
     animRef.current=requestAnimationFrame(loop);
