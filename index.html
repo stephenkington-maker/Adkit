@@ -315,18 +315,21 @@ function FlickApp(){
   useEffect(()=>{posRef.current={x:lx,y:ly,s:logoScale}},[lx,ly,logoScale]);
   useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos]);
   useEffect(()=>{if(!logo){logoRef.current=null;return}loadImg(logo).then(i=>logoRef.current=i)},[logo]);
+  // Track whether all current bg images have finished loading
+  const[bgsReady,setBgsReady]=useState(false);
   useEffect(()=>{
+    setBgsReady(false);
     bgRefs.current=new Array(bgs.length).fill(null);
+    if(bgs.length===0){setBgsReady(true);return}
     let loaded=0;
+    let cancelled=false;
     bgs.forEach((src,i)=>loadImg(src).then(im=>{
+      if(cancelled)return;
       bgRefs.current[i]=im;
       loaded++;
-      // Once all loaded, restart preview loop so frames render correctly
-      if(loaded===bgs.length){
-        if(playing){startRef.current=null;bgIdxRef.current=0;if(animRef.current)cancelAnimationFrame(animRef.current);runPreview();}
-        else if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current);
-      }
+      if(loaded===bgs.length)setBgsReady(true);
     }));
+    return()=>{cancelled=true};
   },[bgs]);
 
   const drawFrame=useCallback((canvas,bgIdx,activeElArg)=>{
@@ -446,10 +449,10 @@ function FlickApp(){
   },[bgs,drawFrame,editMode]);
 
   useEffect(()=>{
-    if(playing){startRef.current=null;bgIdxRef.current=0;runPreview()}
-    else{if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60)}
+    if(playing&&bgsReady){startRef.current=null;bgIdxRef.current=0;runPreview()}
+    else if(!playing){if(animRef.current)cancelAnimationFrame(animRef.current);setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60)}
     return()=>{if(animRef.current)cancelAnimationFrame(animRef.current)};
-  },[playing,runPreview,drawFrame,editMode]);
+  },[playing,bgsReady,runPreview,drawFrame,editMode]);
 
   useEffect(()=>{
     if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60);
