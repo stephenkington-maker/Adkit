@@ -2091,9 +2091,9 @@ function Root(){
   const activeAppMeta=APPS.find(a=>a.id===activeApp);
   return(
     <div style={{minHeight:"100vh",background:"#fafafa",display:"flex",flexDirection:"column"}}>
-      <header style={{position:"sticky",top:0,zIndex:100,height:64,display:"flex",alignItems:"center",padding:isWide?"0 32px":"0 16px",gap:12,background:activeApp?"#0d0d14":"#ffffff",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:activeApp?"1px solid rgba(255,255,255,0.07)":"1px solid rgba(0,0,0,0.07)",flexShrink:0,boxShadow:activeApp?"0 2px 16px rgba(0,0,0,0.3)":"0 1px 0 rgba(0,0,0,0.04)"}}>
+      <header style={{position:"sticky",top:0,zIndex:100,height:64,display:"flex",alignItems:"center",padding:isWide?"0 32px":"0 16px",gap:12,background:"#ffffff",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:"1px solid rgba(0,0,0,0.07)",flexShrink:0,boxShadow:"0 1px 0 rgba(0,0,0,0.04)"}}>
         <button onClick={()=>setActiveApp(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
-          <img src={LOGO_URL} alt="Scrolljack" style={{height:32,width:"auto",display:"block",filter:activeApp?"invert(1)":"none"}}/>
+          <img src={LOGO_URL} alt="Scrolljack" style={{height:32,width:"auto",display:"block",filter:"invert(1)"}}/>
         </button>
         {!activeApp&&isWide&&(
           <nav style={{display:"flex",gap:28,marginLeft:40}}>
@@ -2104,7 +2104,7 @@ function Root(){
         )}
         <div style={{flex:1}}/>
         {activeApp&&(
-          <button onClick={()=>setActiveApp(null)} style={{padding:"6px 16px",borderRadius:99,fontSize:11,fontWeight:600,color:"rgba(255,255,255,0.6)",background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.12)",cursor:"pointer",letterSpacing:"0.03em"}}>← Home</button>
+          <button onClick={()=>setActiveApp(null)} style={{padding:"6px 16px",borderRadius:99,fontSize:11,fontWeight:600,color:"#374151",background:"rgba(0,0,0,0.05)",border:"1px solid rgba(0,0,0,0.1)",cursor:"pointer",letterSpacing:"0.03em"}}>← Home</button>
         )}
         {!activeApp&&(
           <div style={{display:"flex",alignItems:"center",gap:10}}>
@@ -2113,9 +2113,9 @@ function Root(){
         )}
       </header>
       {activeApp&&(
-        <div style={{display:"flex",gap:4,padding:"6px 16px",borderBottom:"1px solid rgba(0,0,0,0.06)",background:"#111118",overflowX:"auto",flexShrink:0}}>
+        <div style={{display:"flex",gap:4,padding:"6px 16px",borderBottom:"1px solid rgba(0,0,0,0.06)",background:"#ffffff",overflowX:"auto",flexShrink:0}}>
           {APPS.map(app=>(
-            <button key={app.id} onClick={()=>setActiveApp(app.id)} style={{padding:"5px 14px",fontSize:11,fontWeight:700,cursor:"pointer",borderRadius:99,border:"none",background:activeApp===app.id?app.color+"18":"transparent",color:activeApp===app.id?app.color:"rgba(255,255,255,0.75)",transition:"all 0.14s",whiteSpace:"nowrap",flexShrink:0,boxShadow:activeApp===app.id?`0 0 0 1px ${app.color}44`:"none",background:activeApp===app.id?app.color+"18":"transparent"}}>{app.icon} {app.name}</button>
+            <button key={app.id} onClick={()=>setActiveApp(app.id)} style={{padding:"5px 14px",fontSize:11,fontWeight:700,cursor:"pointer",borderRadius:99,border:"none",background:activeApp===app.id?app.color+"14":"transparent",color:activeApp===app.id?app.color:"#6b7280",transition:"all 0.14s",whiteSpace:"nowrap",flexShrink:0,boxShadow:activeApp===app.id?`0 0 0 1px ${app.color}33`:"none"}}>{app.icon} {app.name}</button>
           ))}
         </div>
       )}
