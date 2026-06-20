@@ -20,10 +20,10 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&family=Bebas+Neue&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800&family=DM+Serif+Display&family=Montserrat:wght@700;800;900&family=Raleway:wght@700;800;900&family=Unbounded:wght@700;800;900&family=Cormorant+Garamond:wght@600;700&family=Archivo+Black&family=Poppins:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@700;800;900&family=Bebas+Neue&family=Space+Grotesk:wght@500;600;700&family=Syne:wght@700;800&family=DM+Serif+Display&family=Montserrat:wght@400;500;600;700;800;900&family=Raleway:wght@700;800;900&family=Unbounded:wght@700;800;900&family=Cormorant+Garamond:wght@600;700&family=Archivo+Black&family=Poppins:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body,#root{height:100%;width:100%}
-body{background:#f0f0f6;color:#111118;font-family:'Inter',system-ui,sans-serif;overflow-x:hidden}
+body{background:#f0f0f6;color:#111118;font-family:'Montserrat',system-ui,sans-serif;font-weight:700;overflow-x:hidden}
 input,textarea,button{font-family:inherit}
 input[type=range]{accent-color:#7c3aed;cursor:pointer;width:100%}
 ::-webkit-scrollbar{width:4px;height:4px}
@@ -84,7 +84,7 @@ const APPS=[
   {id:"drop",   name:"Drop",   icon:"🔥",color:C.red,    tag:"Promo"},
 ];
 const BRAND="Scrolljack";
-const LOGO_URL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjIyIDIzMCAzNTAgNjgiPjxnIGZpbGw9IiNmZmYiPjxwYXRoIGQ9Ik00Ni40LDIzMi45YzkuNCwwLDE0LjMsNS42LDE0LjMsMTUuNXYxLjloLTkuMnYtMi42YzAtNC40LTEuOC02LjEtNC45LTYuMXMtNC45LDEuNy00LjksNi4xLDEuOSw3LjgsOC4zLDEzLjRjOC4xLDcuMSwxMC43LDEyLjMsMTAuNywxOS4zcy00LjksMTUuNS0xNC41LDE1LjUtMTQuNS01LjYtMTQuNS0xNS41di0zLjhoOS4ydjQuNGMwLDQuNCwxLjksNiw1LDZzNS0xLjYsNS02LTEuOS03LjgtOC4zLTEzLjRjLTguMS03LjEtMTAuNy0xMi4zLTEwLjctMTkuM3M0LjktMTUuNSwxNC4zLTE1LjVaIi8+PHBhdGggZD0iTTk1LjQsMjcyLjN2OC4yYzAsOS45LTQuOSwxNS41LTE0LjUsMTUuNXMtMTQuNS01LjYtMTQuNS0xNS41di0zMi4xYzAtOS45LDQuOS0xNS41LDE0LjUtMTUuNXMxNC41LDUuNiwxNC41LDE1LjV2NmgtOS4ydi02LjZjMC00LjQtMS45LTYuMS01LTYuMXMtNSwxLjctNSw2LjF2MzMuM2MwLDQuNCwxLjksNiw1LDZzNS0xLjYsNS02di04LjhoOS4yWiIvPjxwYXRoIGQ9Ik0xMjIuNSwyOTUuM2MtLjUtMS42LS45LTIuNi0uOS03LjZ2LTkuN2MwLTUuNy0xLjktNy44LTYuMy03LjhoLTMuNHYyNS4xaC05Ljd2LTYxLjdoMTQuNmMxMC4xLDAsMTQuNCw0LjcsMTQuNCwxNC4ydjQuOWMwLDYuMy0yLDEwLjQtNi40LDEyLjR2LjJjNC45LDIsNi40LDYuNiw2LjQsMTMuMXY5LjVjMCwzLDAsNS4yLDEuMSw3LjVoLTkuOVpNMTExLjksMjQyLjR2MTloMy44YzMuNiwwLDUuOC0xLjYsNS44LTYuNXYtNi4xYzAtNC40LTEuNS02LjQtNC45LTYuNGgtNC43WiIvPjxwYXRoIGQ9Ik0xMzcuNywyNDguNGMwLTkuOSw1LjItMTUuNSwxNC43LTE1LjVzMTQuNyw1LjYsMTQuNywxNS41djMyLjFjMCw5LjktNS4yLDE1LjUtMTQuNywxNS41cy0xNC43LTUuNi0xNC43LTE1LjV2LTMyLjFaTTE0Ny40LDI4MS4xYzAsNC40LDEuOSw2LjEsNSw2LjFzNS0xLjcsNS02LjF2LTMzLjNjMC00LjQtMS45LTYuMS01LTYuMXMtNSwxLjctNSw2LjF2MzMuM1oiLz48cGF0aCBkPSJNMTc0LjMsMjMzLjZoOS43djUyLjloMTZ2OC44aC0yNS43di02MS43WiIvPjxwYXRoIGQ9Ik0yMDUuMSwyMzMuNmg5Ljd2NTIuOWgxNnY4LjhoLTI1Ljd2LTYxLjdaIi8+PHBhdGggZD0iTTIzNS4zLDI5NS45Yy0xLjcsMC0zLjEsMC00LjctLjJoLS40di05LjZoLjRjMSwuMSwyLjIuMSwzLjMuMSwzLjYsMCw1LjEtMS42LDUuMS01LjV2LTQ3LjRoMTAuNXY0Ni43YzAsMTAuNS00LjgsMTUuOS0xNC4zLDE1LjlaIi8+PHBhdGggZD0iTTI4OC41LDI5NS43aC0xMC42bC0xLjctMTEuMmgtMTEuMmwtMS43LDExLjJoLTkuN2wxMC02Mi40aDE0LjhsMTAsNjIuNFpNMjc1LjcsMjc2LjJoLTEwLjNsNC43LTMyaC45bDQuNywzMloiLz48cGF0aCBkPSJNMzA3LDI5Ni40Yy05LjYsMC0xNC44LTUuNi0xNC44LTE1Ljl2LTMyYzAtMTAuMiw1LjMtMTUuOSwxNC44LTE1LjlzMTQuOCw1LjYsMTQuOCwxNS45djYuNGgtMTB2LTdjMC0zLjktMS41LTUuNy00LjYtNS43cy00LjYsMS44LTQuNiw1Ljd2MzMuM2MwLDMuOCwxLjUsNS42LDQuNiw1LjZzNC42LTEuOCw0LjYtNS42di05LjJoMTB2OC42YzAsMTAuMi01LjMsMTUuOS0xNC44LDE1LjlaIi8+PHBhdGggZD0iTTM2MC44LDI5NS43aC0xMC44bC05LjItMjMuNy0yLjUsNC44djE5LjJoLTEwLjV2LTYyLjRoMTAuNXYyNS42bDEyLTI1LjZoMTAuNmwtMTMuNywyNy45LDEzLjYsMzQuNVoiLz48L2c+PC9zdmc+";
+const LOGO_URL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTc2IDYyNCI+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjE4Ij4KICAgIDxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjI1MzYiIGhlaWdodD0iNTg0IiByeD0iMjkyIiByeT0iMjkyIi8+CiAgPC9nPgogIDxnIGZpbGw9IiNmZmZmZmYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIj4KICAgIDx0ZXh0IHg9IjEyMCIgeT0iNDMwIiBmb250LXNpemU9IjMyMCIgbGV0dGVyLXNwYWNpbmc9IjIiPlNDUjwvdGV4dD4KICA8L2c+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjI2Ij4KICAgIDxyZWN0IHg9Ijc4MCIgeT0iMTIwIiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM5MCIgcng9IjEzMCIgcnk9IjEzMCIvPgogIDwvZz4KICA8ZyBmaWxsPSIjZmZmZmZmIiBmb250LWZhbWlseT0iQXJpYWwsIEhlbHZldGljYSwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCI+CiAgICA8dGV4dCB4PSIxMTE1IiB5PSI0MzAiIGZvbnQtc2l6ZT0iMzIwIiBsZXR0ZXItc3BhY2luZz0iMiI+TExKQUNLPC90ZXh0PgogIDwvZz4KPC9zdmc+";
 const DURATIONS=[5,8,10,15,20]; // seconds
 
 // ─── FONTS & COLOURS ──────────────────────────────────────────────────────────
@@ -157,7 +157,7 @@ function SLabel({n,title,color,opt}){
       <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,fontWeight:400,letterSpacing:"0.1em",textTransform:"uppercase",color:color||C.purple}}>
         <span style={{opacity:0.35}}>{n} </span>{title}
       </span>
-      {opt&&<span style={{fontSize:8,color:C.muted,fontWeight:500,fontFamily:"Inter,sans-serif"}}>optional</span>}
+      {opt&&<span style={{fontSize:8,color:C.muted,fontWeight:500,fontFamily:"Montserrat,sans-serif"}}>optional</span>}
     </div>
   );
 }
@@ -849,7 +849,7 @@ function FlickApp(){
         <div style={{...secTitle,color:"#0ea5e9",marginBottom:showCta?12:0}}>
           <span style={{width:6,height:6,borderRadius:"50%",background:"#0ea5e9",flexShrink:0,display:"inline-block"}}/>
           CTA Link
-          <span style={{fontSize:8,color:"#6b7280",fontWeight:500,marginLeft:2,fontFamily:"Inter,sans-serif"}}>optional</span>
+          <span style={{fontSize:8,color:"#6b7280",fontWeight:500,marginLeft:2,fontFamily:"Montserrat,sans-serif"}}>optional</span>
           <button onClick={()=>{setShowCta(p=>{const v=!p;overlayRef.current={...overlayRef.current,showCta:v};setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},20);return v});setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:showCta?"rgba(14,165,233,0.5)":"rgba(0,0,0,0.1)",background:showCta?"rgba(14,165,233,0.12)":"rgba(0,0,0,0.03)",color:showCta?"#0ea5e9":"#6b7280",fontSize:10,fontWeight:700,cursor:"pointer"}}>
             {showCta?"✓ On":"+ Add"}
           </button>
@@ -1016,7 +1016,7 @@ function FlickApp(){
 
           {/* Audio */}
           <div className="card-white" style={{padding:"14px 16px"}}>
-            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:"0.1em",color:"#374151",marginBottom:10}}>Audio <span style={{fontSize:10,fontWeight:500,fontFamily:"Inter,sans-serif",color:"#9ca3af"}}>optional</span></div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:15,letterSpacing:"0.1em",color:"#374151",marginBottom:10}}>Audio <span style={{fontSize:10,fontWeight:500,fontFamily:"Montserrat,sans-serif",color:"#9ca3af"}}>optional</span></div>
             {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>{setAudio(null);setBlob(null)}}/>
               :<DZ id="fl-audio-r" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration});setBlob(null)}} dragColor="rgba(52,211,153,0.5)" compact>
                 <div style={{fontSize:12,color:"#9ca3af"}}>♪ Drop MP3 / WAV</div>
@@ -1691,11 +1691,10 @@ function HomePage({onSelect}){
         <div style={{position:"absolute",top:"40%",right:"15%",width:"25%",height:"25%",background:"radial-gradient(circle,rgba(249,115,22,0.08) 0%,transparent 70%)",pointerEvents:"none"}}/>
 
         <div style={{maxWidth:720,animation:"fadeUp 0.6s ease both"}}>
-          <h1 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:isWide?"min(7vw,88px)":"min(11vw,60px)",fontWeight:400,letterSpacing:"0.04em",lineHeight:1,marginBottom:28,display:"flex",alignItems:"baseline",justifyContent:"center",gap:"0.18em",flexWrap:"nowrap"}}>
-            <span style={{color:"#0a0a14"}}>Hijack </span>
-            <span style={{WebkitTextFillColor:"transparent",WebkitTextStroke:"1.5px #0a0a14",color:"transparent"}}>The Feed.</span>
+          <h1 style={{fontFamily:"'Montserrat',sans-serif",fontWeight:800,fontSize:isWide?"min(5.5vw,64px)":"min(9vw,42px)",letterSpacing:"-0.02em",lineHeight:1.1,marginBottom:24,color:"#0a0a14"}}>
+            Create Scroll-Stopping Video Ads
           </h1>
-          <p style={{fontSize:isWide?18:15,color:"#6b7280",lineHeight:1.7,maxWidth:520,margin:"0 auto 28px"}}>Five free tools to make scroll-stopping video ads in seconds. No design skills needed — just upload, customise and export.</p>
+          <p style={{fontFamily:"'Montserrat',sans-serif",fontWeight:500,fontSize:isWide?18:15,color:"#6b7280",lineHeight:1.7,maxWidth:540,margin:"0 auto 28px"}}>Five free tools to create high-performing video ads in minutes. No design skills needed. Just upload, customise and export.</p>
           <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
             <button onClick={()=>onSelect("flick")} className="animated-gradient" style={{padding:"14px 32px",borderRadius:99,border:"none",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 4px 24px rgba(124,58,237,0.4)"}}>Start Creating ⚡</button>
             <button onClick={()=>document.getElementById("tools-grid").scrollIntoView({behavior:"smooth"})} className="glass-btn" style={{padding:"14px 28px",borderRadius:99,fontSize:15,fontWeight:600,color:"#374151",border:"none"}}>See All Tools ↓</button>
