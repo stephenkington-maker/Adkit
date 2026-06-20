@@ -1676,114 +1676,131 @@ const DESCS={
 
 function HomePage({onSelect}){
   const[hov,setHov]=useState(null);
-  const[hovIdx,setHovIdx]=useState(null);
   const isWide=window.innerWidth>=900;
   const flick=APPS[0];
-  const tools=APPS.slice(1);
+  const allTools=APPS; // includes Flick as #1 in the numbered grid
+
+  const ICONBG={
+    flick:"linear-gradient(135deg,#7c3aed,#a78bfa)",
+    proof:"linear-gradient(135deg,#2563eb,#3b82f6)",
+    hook:"linear-gradient(135deg,#d97706,#f59e0b)",
+    reveal:"linear-gradient(135deg,#059669,#10b981)",
+    drop:"linear-gradient(135deg,#ea580c,#f97316)",
+  };
+
   return(
-    <div style={{minHeight:"100%",background:"#f0f0f6",overflowY:"auto"}}>
+    <div style={{minHeight:"100%",background:"#08080d",overflowY:"auto"}}>
 
       {/* ── HERO ── */}
-      <div style={{minHeight:"auto",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"64px 24px 24px",textAlign:"center",position:"relative",overflow:"hidden"}}>
+      <div style={{position:"relative",overflow:"hidden",padding:isWide?"56px 40px 0":"32px 20px 0"}}>
         {/* Background blobs */}
-        <div style={{position:"absolute",top:"-10%",left:"-5%",width:"45%",height:"45%",background:"radial-gradient(circle,rgba(124,58,237,0.12) 0%,transparent 70%)",pointerEvents:"none"}}/>
-        <div style={{position:"absolute",bottom:"-5%",right:"-5%",width:"40%",height:"40%",background:"radial-gradient(circle,rgba(236,72,153,0.1) 0%,transparent 70%)",pointerEvents:"none"}}/>
-        <div style={{position:"absolute",top:"40%",right:"15%",width:"25%",height:"25%",background:"radial-gradient(circle,rgba(249,115,22,0.08) 0%,transparent 70%)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",top:"-15%",left:"-8%",width:"50%",height:"55%",background:"radial-gradient(circle,rgba(124,58,237,0.22) 0%,transparent 70%)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",top:"5%",right:"-10%",width:"45%",height:"50%",background:"radial-gradient(circle,rgba(236,72,153,0.16) 0%,transparent 70%)",pointerEvents:"none"}}/>
 
-        <div style={{maxWidth:720,animation:"fadeUp 0.6s ease both"}}>
-          <h1 style={{fontFamily:"'Montserrat',sans-serif",fontWeight:800,fontSize:isWide?"min(5.5vw,64px)":"min(9vw,42px)",letterSpacing:"-0.02em",lineHeight:1.1,marginBottom:24,color:"#0a0a14"}}>
-            Create Scroll-Stopping Video Ads
-          </h1>
-          <p style={{fontFamily:"'Montserrat',sans-serif",fontWeight:500,fontSize:isWide?18:15,color:"#6b7280",lineHeight:1.7,maxWidth:540,margin:"0 auto 28px"}}>Five free tools to create high-performing video ads in minutes. No design skills needed. Just upload, customise and export.</p>
-          <div style={{display:"flex",gap:12,justifyContent:"center",flexWrap:"wrap"}}>
-            <button onClick={()=>onSelect("flick")} className="animated-gradient" style={{padding:"14px 32px",borderRadius:99,border:"none",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 4px 24px rgba(124,58,237,0.4)"}}>Start Creating ⚡</button>
-            <button onClick={()=>document.getElementById("tools-grid").scrollIntoView({behavior:"smooth"})} className="glass-btn" style={{padding:"14px 28px",borderRadius:99,fontSize:15,fontWeight:600,color:"#374151",border:"none"}}>See All Tools ↓</button>
+        <div style={{maxWidth:1200,margin:"0 auto",position:"relative",display:isWide?"grid":"block",gridTemplateColumns:isWide?"1fr 1fr":undefined,gap:isWide?48:0,alignItems:"center"}}>
+
+          {/* Left: copy */}
+          <div style={{textAlign:"left"}}>
+            <div style={{display:"inline-flex",alignItems:"center",gap:6,padding:"6px 14px",borderRadius:99,background:"rgba(124,58,237,0.15)",border:"1px solid rgba(124,58,237,0.3)",fontSize:11,fontWeight:700,letterSpacing:"0.08em",color:"#c4b5fd",marginBottom:20,textTransform:"uppercase"}}>5 Free Tools</div>
+
+            <h1 style={{fontFamily:"'Montserrat',sans-serif",fontWeight:800,fontSize:isWide?"min(4.2vw,52px)":"min(9vw,38px)",letterSpacing:"-0.02em",lineHeight:1.08,marginBottom:18,color:"#fff"}}>
+              Create Scroll-Stopping<br/>
+              <span style={{background:"linear-gradient(90deg,#a855f7,#ec4899,#f97316)",WebkitBackgroundClip:"text",WebkitTextFillColor:"transparent",backgroundClip:"text"}}>Video Ads</span> in Seconds.
+            </h1>
+
+            <p style={{fontFamily:"'Montserrat',sans-serif",fontWeight:500,fontSize:isWide?16:14,color:"#9ca3af",lineHeight:1.7,maxWidth:480,marginBottom:28}}>Five free tools to turn your ideas into high-performing video ads. No design skills needed — just upload, customise and export.</p>
+
+            <div style={{display:"flex",gap:12,flexWrap:"wrap",marginBottom:20}}>
+              <button onClick={()=>onSelect("flick")} className="animated-gradient" style={{padding:"14px 28px",borderRadius:99,border:"none",color:"#fff",fontSize:14,fontWeight:800,cursor:"pointer",letterSpacing:"0.02em",boxShadow:"0 4px 24px rgba(124,58,237,0.4)",display:"inline-flex",alignItems:"center",gap:6}}>Start Creating <span>→</span></button>
+              <button onClick={()=>document.getElementById("tools-grid").scrollIntoView({behavior:"smooth"})} style={{padding:"14px 26px",borderRadius:99,fontSize:14,fontWeight:700,color:"#fff",border:"1px solid rgba(255,255,255,0.18)",background:"rgba(255,255,255,0.04)",cursor:"pointer",display:"inline-flex",alignItems:"center",gap:6}}>Explore All Tools <span>↓</span></button>
+            </div>
+
+            <div style={{display:"flex",gap:18,flexWrap:"wrap"}}>
+              {["No Sign Up","100% Free","Export in Seconds"].map((t,i)=>(
+                <span key={i} style={{display:"inline-flex",alignItems:"center",gap:6,fontSize:12,color:"#9ca3af",fontWeight:600}}>
+                  <span style={{width:16,height:16,borderRadius:99,background:"rgba(124,58,237,0.2)",color:"#a78bfa",display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:9}}>✓</span>
+                  {t}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Right: Flick live demo card */}
+          <div style={{marginTop:isWide?0:32}}>
+            <button onClick={()=>onSelect("flick")}
+              onMouseEnter={()=>setHov("flick-hero")} onMouseLeave={()=>setHov(null)}
+              style={{width:"100%",borderRadius:18,border:`1px solid ${hov==="flick-hero"?"rgba(124,58,237,0.5)":"rgba(255,255,255,0.1)"}`,padding:0,background:"#0e0e18",cursor:"pointer",textAlign:"left",overflow:"hidden",transition:"all 0.22s",boxShadow:hov==="flick-hero"?"0 20px 60px rgba(124,58,237,0.25)":"0 8px 32px rgba(0,0,0,0.5)"}}>
+              <div style={{display:"flex",alignItems:"stretch",minHeight:isWide?280:220,position:"relative"}}>
+                <div style={{width:isWide?"48%":"42%",flexShrink:0,position:"relative",overflow:"hidden",background:"#0a0a12"}}>
+                  <DemoCanvas drawFn={DEMO_FN.flick}/>
+                  <div style={{position:"absolute",top:10,left:10,background:"rgba(124,58,237,0.9)",borderRadius:6,padding:"3px 9px",fontSize:9,fontWeight:800,color:"#fff",letterSpacing:"0.1em"}}>LIVE</div>
+                </div>
+                <div style={{flex:1,padding:isWide?"28px 28px 28px 24px":"18px",display:"flex",flexDirection:"column",justifyContent:"center",gap:10}}>
+                  <div style={{display:"flex",alignItems:"center",gap:9,flexWrap:"wrap"}}>
+                    <span style={{fontSize:18}}>⚡</span>
+                    <span style={{fontFamily:"'Montserrat',sans-serif",fontSize:isWide?20:17,fontWeight:800,letterSpacing:"-0.01em",color:"#fff"}}>FLICK</span>
+                    <span style={{fontSize:9,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase",color:"#c4b5fd",background:"rgba(124,58,237,0.18)",padding:"3px 8px",borderRadius:5}}>Brand</span>
+                  </div>
+                  <p style={{fontSize:13,color:"#9ca3af",lineHeight:1.7,margin:0,maxWidth:280}}>Upload your logo, add background images and export a fast-cut brand video ad ready for Instagram, TikTok and Facebook.</p>
+                  <div style={{display:"inline-flex",alignItems:"center",gap:6,color:hov==="flick-hero"?"#c4b5fd":"#a78bfa",fontSize:13,fontWeight:700,transition:"color 0.15s"}}>
+                    Start creating <span style={{transform:hov==="flick-hero"?"translateX(4px)":"none",transition:"transform 0.15s",display:"inline-block"}}>→</span>
+                  </div>
+                </div>
+                <div style={{position:"absolute",bottom:16,right:16,width:44,height:44,borderRadius:99,background:"rgba(255,255,255,0.08)",border:"1px solid rgba(255,255,255,0.2)",display:"flex",alignItems:"center",justifyContent:"center",backdropFilter:"blur(6px)"}}>
+                  <span style={{fontSize:14,color:"#fff",marginLeft:2}}>▶</span>
+                </div>
+              </div>
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── TOOLS GRID ── */}
-      <div id="tools-grid" style={{padding:isWide?"0 40px 48px":"0 16px 40px",maxWidth:1200,margin:"0 auto",width:"100%"}}>
-        <div style={{textAlign:"center",marginBottom:40}}>
-          <h1 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:"min(9vw,88px)",fontWeight:400,letterSpacing:"0.04em",lineHeight:1,marginBottom:14,color:"#f0f0f8"}}>Scrolljack</h1>
-
-
-        </div>
-
-        {/* ── Hero card: Flick ── */}
-        <button onClick={()=>onSelect(flick.id)}
-          onMouseEnter={()=>setHov(flick.id)} onMouseLeave={()=>setHov(null)}
-          style={{width:"100%",marginBottom:16,borderRadius:20,border:`1px solid ${hov===flick.id?"rgba(124,58,237,0.6)":"rgba(255,255,255,0.08)"}`,padding:0,background:"#111120",cursor:"pointer",textAlign:"left",overflow:"hidden",transition:"all 0.22s",boxShadow:hov===flick.id?"0 16px 60px rgba(124,58,237,0.2)":"0 4px 20px rgba(0,0,0,0.4)",transform:hov===flick.id?"translateY(-4px)":"none"}}>
-          <div style={{display:"flex",alignItems:"stretch",minHeight:isWide?240:160}}>
-            {/* Live demo preview — big */}
-            <div style={{width:isWide?"42%":"38%",flexShrink:0,borderRight:"1px solid rgba(255,255,255,0.07)",overflow:"hidden",position:"relative",background:"#0a0a12"}}>
-              <DemoCanvas drawFn={DEMO_FN.flick}/>
-              <div style={{position:"absolute",top:10,left:10,background:"rgba(124,58,237,0.85)",borderRadius:6,padding:"3px 8px",fontSize:9,fontWeight:800,color:"#fff",letterSpacing:"0.1em"}}>LIVE</div>
-            </div>
-            {/* Info */}
-            <div style={{flex:1,padding:isWide?"32px 36px":"20px 20px",display:"flex",flexDirection:"column",justifyContent:"center",gap:12}}>
-              <div style={{display:"flex",alignItems:"center",gap:10,flexWrap:"wrap"}}>
-                <span style={{fontSize:22}}>{flick.icon}</span>
-                <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:isWide?36:26,fontWeight:400,letterSpacing:"0.06em",color:hov===flick.id?"#c4b5fd":"#f0f0f8",transition:"color 0.15s"}}>{flick.name}</span>
-                <span style={{fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:flick.color,background:flick.color+"22",padding:"3px 8px",borderRadius:5,border:`1px solid ${flick.color}44`}}>{flick.tag}</span>
-              </div>
-              <p style={{fontSize:isWide?14:12,color:"#6b7280",lineHeight:1.7,margin:0,maxWidth:400}}>{DESCS.flick}</p>
-              <div style={{display:"inline-flex",alignItems:"center",gap:6,color:hov===flick.id?"#c4b5fd":"rgba(255,255,255,0.35)",fontSize:13,fontWeight:700,transition:"color 0.15s"}}>
-                Start creating <span style={{transform:hov===flick.id?"translateX(4px)":"none",transition:"transform 0.15s",display:"inline-block"}}>→</span>
-              </div>
-            </div>
-          </div>
-        </button>
-
-        {/* ── 2×2 grid: remaining tools ── */}
-        <div style={{display:"grid",gridTemplateColumns:isWide?"1fr 1fr":"1fr",gap:12}}>
-          {tools.map(app=>(
+      {/* ── TOOLS GRID (numbered) ── */}
+      <div id="tools-grid" style={{padding:isWide?"56px 40px 0":"40px 20px 0",maxWidth:1200,margin:"0 auto",width:"100%"}}>
+        <div style={{display:"grid",gridTemplateColumns:isWide?"repeat(5,1fr)":"1fr 1fr",gap:14}}>
+          {allTools.map((app,idx)=>(
             <button key={app.id} onClick={()=>onSelect(app.id)}
               onMouseEnter={()=>setHov(app.id)} onMouseLeave={()=>setHov(null)}
-              style={{borderRadius:18,border:`1px solid ${hov===app.id?app.color+"55":"rgba(255,255,255,0.07)"}`,padding:0,background:"#111120",cursor:"pointer",textAlign:"left",overflow:"hidden",transition:"all 0.2s",boxShadow:hov===app.id?`0 12px 40px ${app.color}18`:"0 2px 12px rgba(0,0,0,0.35)",transform:hov===app.id?"translateY(-3px)":"none"}}>
-              <div style={{display:"flex",alignItems:"stretch",height:130}}>
-                {/* Live preview */}
-                <div style={{width:90,flexShrink:0,borderRight:"1px solid rgba(255,255,255,0.06)",overflow:"hidden",position:"relative",background:"#0a0a12"}}>
-                  <DemoCanvas drawFn={DEMO_FN[app.id]}/>
-                  <div style={{position:"absolute",top:6,left:6,background:"rgba(0,0,0,0.6)",borderRadius:4,padding:"2px 5px",fontSize:7,fontWeight:800,color:"rgba(255,255,255,0.45)",letterSpacing:"0.08em"}}>LIVE</div>
+              style={{position:"relative",borderRadius:16,border:`1px solid ${hov===app.id?app.color+"55":"rgba(255,255,255,0.08)"}`,padding:"20px 16px",background:"#0e0e18",cursor:"pointer",textAlign:"left",transition:"all 0.18s",boxShadow:hov===app.id?`0 10px 30px ${app.color}22`:"0 2px 10px rgba(0,0,0,0.3)",transform:hov===app.id?"translateY(-3px)":"none",display:"flex",flexDirection:"column",gap:12,minHeight:230}}>
+              <span style={{position:"absolute",top:14,left:14,width:22,height:22,borderRadius:7,background:"rgba(124,58,237,0.25)",color:"#c4b5fd",fontSize:11,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{idx+1}</span>
+              <div style={{width:48,height:48,borderRadius:13,background:ICONBG[app.id],display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,marginTop:18}}>{app.icon}</div>
+              <div>
+                <div style={{display:"flex",alignItems:"center",gap:7,marginBottom:6,flexWrap:"wrap"}}>
+                  <span style={{fontFamily:"'Montserrat',sans-serif",fontSize:16,fontWeight:800,color:"#fff",letterSpacing:"-0.01em"}}>{app.name}</span>
+                  <span style={{fontSize:8,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase",color:app.color,background:app.color+"1c",padding:"2px 6px",borderRadius:4}}>{app.tag}</span>
                 </div>
-                {/* Info */}
-                <div style={{flex:1,padding:"16px 18px",display:"flex",flexDirection:"column",justifyContent:"center",gap:6}}>
-                  <div style={{display:"flex",alignItems:"center",gap:7}}>
-                    <span style={{fontSize:14}}>{app.icon}</span>
-                    <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:20,fontWeight:400,letterSpacing:"0.06em",color:hov===app.id?app.color:"#e8e8f2",transition:"color 0.15s"}}>{app.name}</span>
-                    <span style={{fontSize:8,fontWeight:700,letterSpacing:"0.1em",textTransform:"uppercase",color:app.color,background:app.color+"18",padding:"2px 6px",borderRadius:4}}>{app.tag}</span>
-                  </div>
-                  <p style={{fontSize:11,color:"#5b6470",lineHeight:1.5,margin:0}}>{DESCS[app.id]}</p>
-                </div>
-                <div style={{display:"flex",alignItems:"center",padding:"0 12px",color:hov===app.id?app.color:"rgba(255,255,255,0.12)",fontSize:13,transition:"all 0.15s",transform:hov===app.id?"translateX(2px)":"none",flexShrink:0}}>→</div>
+                <p style={{fontSize:12,color:"#8b8fa3",lineHeight:1.55,margin:0}}>{DESCS[app.id]}</p>
               </div>
+              <div style={{marginTop:"auto",color:hov===app.id?app.color:"rgba(255,255,255,0.25)",fontSize:15,transition:"all 0.15s",transform:hov===app.id?"translateX(3px)":"none"}}>→</div>
             </button>
           ))}
         </div>
+      </div>
 
-        {/* ── Footer tagline ── */}
-        {/* Three column manifesto */}
-        <div style={{display:"grid",gridTemplateColumns:isWide?"1fr 1fr 1fr":"1fr",gap:24,marginTop:60,paddingTop:40,borderTop:"1px solid rgba(255,255,255,0.07)"}}>
+      {/* ── 3-COL MANIFESTO ── */}
+      <div style={{padding:isWide?"56px 40px 64px":"40px 20px 48px",maxWidth:1200,margin:"0 auto",width:"100%"}}>
+        <div style={{display:"grid",gridTemplateColumns:isWide?"1fr 1fr 1fr":"1fr",gap:16,padding:isWide?"32px":"24px",borderRadius:18,background:"rgba(255,255,255,0.03)",border:"1px solid rgba(255,255,255,0.07)"}}>
           {[
-            {h:"Make great ads without the complexity.",body:"Scrolljack gives you simple, purpose-built tools to create video ads for social media — without needing a design degree, a video editor or an expensive agency. Just upload, customise and export."},
-            {h:"Built for creators, not studios.",body:"Whether you're a Canva user looking for video, a video editor who wants quick social content, or a brand owner making your first ad — Scrolljack is designed to get you from idea to exported video in under two minutes."},
-            {h:"Viral ad ideas, ready to export.",body:"From hook-style videos to before-and-after reveals to animated price drops — every tool is built around formats that actually perform on Instagram, TikTok and Facebook. Free to use, no account needed."},
+            {icon:"⚡",bg:"rgba(124,58,237,0.22)",fg:"#a78bfa",h:"Make Great Ads",h2:"Without The Complexity.",body:"Scrolljack gives you simple, powerful tools to create ads that perform."},
+            {icon:"♥",bg:"rgba(236,72,153,0.22)",fg:"#f472b6",h:"Built For Creators,",h2:"Not Studios.",body:"Whether you're a creator, marketer or business — we've got you."},
+            {icon:"🚀",bg:"rgba(249,115,22,0.22)",fg:"#fb923c",h:"Viral Ad Ideas,",h2:"Ready To Export.",body:"From hooks to drops to transformations, everything you need in one place."},
           ].map((col,i)=>(
-            <div key={i} style={{display:"flex",flexDirection:"column",gap:10}}>
-              <h2 style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,fontWeight:400,letterSpacing:"0.08em",color:"#0a0a14",lineHeight:1.1,margin:0}}>{col.h}</h2>
-              <p style={{fontSize:14,color:"#6b7280",lineHeight:1.8,margin:0}}>{col.body}</p>
+            <div key={i} style={{display:"flex",gap:14}}>
+              <div style={{width:44,height:44,borderRadius:12,background:col.bg,color:col.fg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0}}>{col.icon}</div>
+              <div>
+                <div style={{fontFamily:"'Montserrat',sans-serif",fontSize:14,fontWeight:800,color:"#fff",letterSpacing:"-0.01em",lineHeight:1.3,textTransform:"uppercase"}}>{col.h}<br/>{col.h2}</div>
+                <p style={{fontSize:13,color:"#8b8fa3",lineHeight:1.6,margin:"8px 0 0"}}>{col.body}</p>
+              </div>
             </div>
           ))}
         </div>
-        <p style={{textAlign:"center",marginTop:32,fontSize:11,color:"#9ca3af",lineHeight:1.6}}>
+        <p style={{textAlign:"center",marginTop:28,fontSize:11,color:"#5b6470",lineHeight:1.6}}>
           Free to use · No account needed · Export ready for Instagram, TikTok & Facebook · Perfect for Canva users & video editors
         </p>
       </div>
     </div>
   );
 }
-
 // ─── CONTACT FORM ─────────────────────────────────────────────────────────────
 function ContactForm({open,onClose}){
   const[form,setForm]=useState({name:"",email:"",company:"",comments:""});
