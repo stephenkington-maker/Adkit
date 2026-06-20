@@ -84,7 +84,7 @@ const APPS=[
   {id:"drop",   name:"Drop",   icon:"🔥",color:C.red,    tag:"Promo"},
 ];
 const BRAND="Scrolljack";
-const LOGO_URL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTc2IDYyNCI+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjE4Ij4KICAgIDxyZWN0IHg9IjIwIiB5PSIyMCIgd2lkdGg9IjI1MzYiIGhlaWdodD0iNTg0IiByeD0iMjkyIiByeT0iMjkyIi8+CiAgPC9nPgogIDxnIGZpbGw9IiNmZmZmZmYiIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iOTAwIj4KICAgIDx0ZXh0IHg9IjEyMCIgeT0iNDMwIiBmb250LXNpemU9IjMyMCIgbGV0dGVyLXNwYWNpbmc9IjIiPlNDUjwvdGV4dD4KICA8L2c+CiAgPGcgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjI2Ij4KICAgIDxyZWN0IHg9Ijc4MCIgeT0iMTIwIiB3aWR0aD0iMjYwIiBoZWlnaHQ9IjM5MCIgcng9IjEzMCIgcnk9IjEzMCIvPgogIDwvZz4KICA8ZyBmaWxsPSIjZmZmZmZmIiBmb250LWZhbWlseT0iQXJpYWwsIEhlbHZldGljYSwgc2Fucy1zZXJpZiIgZm9udC13ZWlnaHQ9IjkwMCI+CiAgICA8dGV4dCB4PSIxMTE1IiB5PSI0MzAiIGZvbnQtc2l6ZT0iMzIwIiBsZXR0ZXItc3BhY2luZz0iMiI+TExKQUNLPC90ZXh0PgogIDwvZz4KPC9zdmc+";
+const LOGO_URL="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMjcwIDM2MCI+CjxyZWN0IHg9IjEwIiB5PSIxMCIgd2lkdGg9IjEyNTAiIGhlaWdodD0iMzQwIiByeD0iMTcwLjAiIHJ5PSIxNzAuMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjEyIi8+CjxnIGZvbnQtZmFtaWx5PSJBcmlhbCwgSGVsdmV0aWNhLCBzYW5zLXNlcmlmIiBmb250LXdlaWdodD0iNzAwIiBmb250LXNpemU9IjE2MCIgZmlsbD0iI2ZmZmZmZiI+Cjx0ZXh0IHg9IjcwIiB5PSIyMzUiPlM8L3RleHQ+Cjx0ZXh0IHg9IjE4Mi43MTg3NSIgeT0iMjM1Ij5DPC90ZXh0Pgo8dGV4dCB4PSIzMDQuMjY1NjI1IiB5PSIyMzUiPlI8L3RleHQ+Cjx0ZXh0IHg9IjU1Ni4yNjU2MjUiIHk9IjIzNSI+TDwvdGV4dD4KPHRleHQgeD0iNjYwLjAiIHk9IjIzNSI+TDwvdGV4dD4KPHRleHQgeD0iNzYzLjczNDM3NSIgeT0iMjM1Ij5KPC90ZXh0Pgo8dGV4dCB4PSI4NTguNzE4NzUiIHk9IjIzNSI+QTwvdGV4dD4KPHRleHQgeD0iOTgwLjI2NTYyNSIgeT0iMjM1Ij5DPC90ZXh0Pgo8dGV4dCB4PSIxMTAxLjgxMjUiIHk9IjIzNSI+SzwvdGV4dD4KPC9nPgo8cmVjdCB4PSI0MzkuOSIgeT0iMTIzLjAiIHdpZHRoPSI5NS44IiBoZWlnaHQ9IjExNC4wIiByeD0iNDcuOSIgcnk9IjQ3LjkiIGZpbGw9Im5vbmUiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIyMiIvPgo8L3N2Zz4=";
 const DURATIONS=[5,8,10,15,20]; // seconds
 
 // ─── FONTS & COLOURS ──────────────────────────────────────────────────────────
@@ -2013,7 +2013,7 @@ function Root(){
     <div style={{minHeight:"100vh",background:"#f0f0f6",display:"flex",flexDirection:"column"}}>
       <header style={{position:"sticky",top:0,zIndex:100,height:64,display:"flex",alignItems:"center",padding:isWide?"0 32px":"0 16px",gap:12,background:activeApp?"#0d0d14":"#ffffff",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:activeApp?"1px solid rgba(255,255,255,0.07)":"1px solid rgba(0,0,0,0.07)",flexShrink:0,boxShadow:activeApp?"0 2px 16px rgba(0,0,0,0.3)":"0 1px 0 rgba(0,0,0,0.04)"}}>
         <button onClick={()=>setActiveApp(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
-          <img src={LOGO_URL} alt="Scrolljack" style={{height:32,width:"auto",display:"block",filter:activeApp?"none":"invert(1)"}}/>
+          <img src={LOGO_URL} alt="Scrolljack" style={{height:32,width:"auto",display:"block",filter:activeApp?"invert(1)":"none"}}/>
         </button>
         {!activeApp&&isWide&&(
           <nav style={{display:"flex",gap:28,marginLeft:40}}>
