@@ -183,6 +183,18 @@ function DZ({id,accept,multi,onFiles,dragColor,children,compact}){
   );
 }
 
+function Toggle({on,onClick,color,label}){
+  const c=color||"#7c3aed";
+  return(
+    <button onClick={onClick} aria-pressed={on} style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
+      {label&&<span style={{fontSize:10,fontWeight:700,color:on?c:"#9ca3af"}}>{label}</span>}
+      <span style={{width:36,height:21,borderRadius:99,background:on?c:"rgba(0,0,0,0.15)",position:"relative",transition:"background 0.18s ease",flexShrink:0,display:"inline-block"}}>
+        <span style={{position:"absolute",top:2,left:on?17:2,width:17,height:17,borderRadius:99,background:"#fff",boxShadow:"0 1px 3px rgba(0,0,0,0.3)",transition:"left 0.18s cubic-bezier(0.4,0,0.2,1)"}}/>
+      </span>
+    </button>
+  );
+}
+
 function Pill({active,onClick,color,children}){
   const c=color||C.purple;
   return(
@@ -297,8 +309,10 @@ function FlickApp(){
   // Emoji
   const[emoji,setEmoji]=useState("");
   // CTA link text
-  const[ctaText,setCtaText]=useState("");
-  const[showCta,setShowCta]=useState(false);
+  const[ctaText,setCtaText]=useState("Learn more");
+  const[showCta,setShowCta]=useState(true);
+  const[ctaFont,setCtaFont]=useState("Inter");
+  const[ctaColor,setCtaColor]=useState("#ffffff");
   const[ctaPos,setCtaPos]=useState({x:50,y:91});
   const[ctaSize,setCtaSize]=useState(32);
   // Background colour overlay (tint)
@@ -337,7 +351,7 @@ function FlickApp(){
   const R=RATIOS.find(r=>r.key===ratio);
 
   useEffect(()=>{posRef.current={x:lx,y:ly,s:logoScale}},[lx,ly,logoScale]);
-  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize,overlayOn,overlayColor,overlayOpacity}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,ctaPos,ctaSize,overlayOn,overlayColor,overlayOpacity]);
+  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize,ctaFont,ctaColor,overlayOn,overlayColor,overlayOpacity}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,ctaPos,ctaSize,ctaFont,ctaColor,overlayOn,overlayColor,overlayOpacity]);
   useEffect(()=>{if(!logo){logoRef.current=null;return}loadImg(logo).then(i=>logoRef.current=i)},[logo]);
   // Track whether all current bg images have finished loading
   const[bgsReady,setBgsReady]=useState(false);
@@ -456,14 +470,15 @@ function FlickApp(){
       const cp=ov.ctaPos||{x:50,y:91};
       const cSize=ov.ctaSize||32;
       const fs=Math.round(sz.w*(cSize/100)*0.1);
-      ctx.font=`500 ${fs}px 'Poppins',sans-serif`;
-      ctx.fillStyle="rgba(255,255,255,0.75)";
+      ctx.font=`600 ${fs}px ${ff(ov.ctaFont||"Inter")}`;
+      ctx.fillStyle=ov.ctaColor||"#ffffff";
       ctx.textAlign="center";ctx.textBaseline="middle";
       const tw=ctx.measureText(ov.ctaText).width;
       const ctaX=szX(cp.x),ctaY=szY(cp.y);
       ctx.fillText(ov.ctaText,ctaX,ctaY);
-      ctx.strokeStyle="rgba(255,255,255,0.45)";ctx.lineWidth=0.8;
+      ctx.strokeStyle=ov.ctaColor||"#ffffff";ctx.lineWidth=1;ctx.globalAlpha=0.7;
       ctx.beginPath();ctx.moveTo(ctaX-tw/2,ctaY+fs*0.6);ctx.lineTo(ctaX+tw/2,ctaY+fs*0.6);ctx.stroke();
+      ctx.globalAlpha=1;
       guide(ctaX-tw/2-6,ctaY-fs/2-6,tw+12,fs+fs*0.6+12,"cta");
       ctx.textAlign="left";ctx.textBaseline="alphabetic";
     }
@@ -491,7 +506,7 @@ function FlickApp(){
 
   useEffect(()=>{
     if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60);
-  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize,overlayOn,overlayColor,overlayOpacity,drawFrame,playing]);
+  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize,ctaFont,ctaColor,overlayOn,overlayColor,overlayOpacity,drawFrame,playing]);
 
   // Multi-element drag system — always reads latest from overlayRef
   useEffect(()=>{
@@ -841,9 +856,7 @@ function FlickApp(){
           <span style={{width:6,height:6,borderRadius:"50%",background:"#8b5cf6",flexShrink:0,display:"inline-block"}}/>
           Subline
           <span style={{fontSize:8,color:"#5b6470",fontWeight:500,marginLeft:2}}>optional</span>
-          <button onClick={()=>{setShowSubline(p=>!p);setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:showSubline?"rgba(139,92,246,0.5)":"rgba(255,255,255,0.1)",background:showSubline?"rgba(139,92,246,0.15)":"rgba(255,255,255,0.03)",color:showSubline?"#c4b5fd":"#9ca3af",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-            {showSubline?"✓ On":"+ Add"}
-          </button>
+          <div style={{marginLeft:"auto"}}><Toggle on={showSubline} color="#8b5cf6" onClick={()=>{setShowSubline(p=>!p);setBlob(null)}}/></div>
         </div>
         {showSubline&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -866,14 +879,16 @@ function FlickApp(){
           <span style={{width:6,height:6,borderRadius:"50%",background:"#0ea5e9",flexShrink:0,display:"inline-block"}}/>
           CTA Link
           <span style={{fontSize:8,color:"#6b7280",fontWeight:500,marginLeft:2,fontFamily:"Montserrat,sans-serif"}}>optional</span>
-          <button onClick={()=>{setShowCta(p=>{const v=!p;overlayRef.current={...overlayRef.current,showCta:v};setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},20);return v});setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:showCta?"rgba(14,165,233,0.5)":"rgba(0,0,0,0.1)",background:showCta?"rgba(14,165,233,0.12)":"rgba(0,0,0,0.03)",color:showCta?"#0ea5e9":"#6b7280",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-            {showCta?"✓ On":"+ Add"}
-          </button>
+          <div style={{marginLeft:"auto"}}>
+            <Toggle on={showCta} color="#0ea5e9" onClick={()=>{setShowCta(p=>{const v=!p;overlayRef.current={...overlayRef.current,showCta:v};setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},20);return v});setBlob(null)}}/>
+          </div>
         </div>
         {showCta&&(
-          <div style={{display:"flex",flexDirection:"column",gap:6}}>
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
             <input value={ctaText} onChange={e=>{setCtaText(e.target.value);setBlob(null);overlayRef.current={...overlayRef.current,ctaText:e.target.value}}} placeholder="e.g. Shop now · botanica.com" style={{width:"100%",padding:"10px 12px",borderRadius:9,background:"#f5f5fa",border:"1px solid rgba(0,0,0,0.08)",color:"#111118",fontSize:13,outline:"none",fontFamily:"'Poppins',sans-serif"}}/>
-            <p style={{fontSize:9,color:"#9ca3af",margin:0}}>Appears as a small underlined link at the bottom centre of the video.</p>
+            <FontColorPicker font={ctaFont} setFont={f=>{setCtaFont(f);setBlob(null)}} color={ctaColor} setColor={c=>{setCtaColor(c);setBlob(null)}} accent="#0ea5e9"/>
+            <div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:9,fontWeight:700,color:"#6b7280",letterSpacing:"0.06em",textTransform:"uppercase",flexShrink:0}}>Size</span><input type="range" min="10" max="80" value={ctaSize} onChange={e=>{setCtaSize(Number(e.target.value));setBlob(null)}}/><span style={{fontSize:9,color:"#6b7280",flexShrink:0,width:24,textAlign:"right"}}>{ctaSize}%</span></div>
+            <p style={{fontSize:9,color:"#9ca3af",margin:0}}>Drag on the preview to move · scroll/pinch to resize.</p>
           </div>
         )}
       </div>
@@ -884,9 +899,7 @@ function FlickApp(){
           <span style={{width:6,height:6,borderRadius:"50%",background:"#f59e0b",flexShrink:0,display:"inline-block"}}/>
           Emoji
           <span style={{fontSize:8,color:"#5b6470",fontWeight:500,marginLeft:2}}>optional</span>
-          <button onClick={()=>{setShowEmoji(p=>!p);if(showEmoji)setEmoji("");setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:showEmoji?"rgba(245,158,11,0.5)":"rgba(255,255,255,0.1)",background:showEmoji?"rgba(245,158,11,0.15)":"rgba(255,255,255,0.03)",color:showEmoji?"#fcd34d":"#9ca3af",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-            {showEmoji?"✓ On":"+ Add"}
-          </button>
+          <div style={{marginLeft:"auto"}}><Toggle on={showEmoji} color="#f59e0b" onClick={()=>{setShowEmoji(p=>!p);if(showEmoji)setEmoji("");setBlob(null)}}/></div>
         </div>
         {showEmoji&&(
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
@@ -945,9 +958,7 @@ function FlickApp(){
           <span style={{width:6,height:6,borderRadius:"50%",background:"#6b7280",flexShrink:0,display:"inline-block"}}/>
           Overlay
           <span style={{fontSize:8,color:"#9ca3af",fontWeight:500,marginLeft:2,fontFamily:"Montserrat,sans-serif"}}>optional</span>
-          <button onClick={()=>{setOverlayOn(p=>!p);setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:overlayOn?"rgba(107,114,128,0.4)":"rgba(0,0,0,0.1)",background:overlayOn?"rgba(107,114,128,0.1)":"rgba(0,0,0,0.03)",color:overlayOn?"#374151":"#6b7280",fontSize:10,fontWeight:700,cursor:"pointer"}}>
-            {overlayOn?"✓ On":"Off"}
-          </button>
+          <div style={{marginLeft:"auto"}}><Toggle on={overlayOn} color="#6b7280" onClick={()=>{setOverlayOn(p=>!p);setBlob(null)}}/></div>
         </div>
         {overlayOn&&(
           <div style={{display:"flex",flexDirection:"column",gap:10}}>
