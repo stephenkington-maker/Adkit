@@ -910,24 +910,6 @@ function FlickApp(){
         )}
       </div>
 
-      {/* Export settings card */}
-      <div style={card}>
-        <div style={{...secTitle,color:"#c4b5fd"}}>
-          <span style={{width:6,height:6,borderRadius:"50%",background:"#c4b5fd",flexShrink:0,display:"inline-block"}}/>
-          Export Settings
-        </div>
-        <div style={{display:"flex",flexDirection:"column",gap:14}}>
-          <div>
-            <div style={{fontSize:10,fontWeight:700,color:"#6b7280",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Aspect Ratio</div>
-            <div style={{display:"flex",gap:6}}>{RATIOS.map(r=><Pill key={r.key} active={ratio===r.key} onClick={()=>{setRatio(r.key);setBlob(null)}}>{r.label}</Pill>)}</div>
-          </div>
-          <div>
-            <div style={{fontSize:10,fontWeight:700,color:"#6b7280",letterSpacing:"0.08em",textTransform:"uppercase",marginBottom:8}}>Duration</div>
-            <div style={{display:"flex",gap:4,flexWrap:"wrap"}}>{DURATIONS.map(d=><Pill key={d} active={duration===d} color="#8b5cf6" onClick={()=>{setDuration(d);setBlob(null)}}>{d}s</Pill>)}</div>
-            {bgs.length>0&&<p style={{fontSize:10,color:"#5b6470",marginTop:6}}>≈ {duration}s · {Math.max(1,Math.round(duration/(bgs.length*BG_MS/1000)))} loops</p>}
-          </div>
-        </div>
-      </div>
 
       {/* Audio card */}
       <div style={card}>
@@ -965,7 +947,7 @@ function FlickApp(){
   const tlItemW=Math.min(36,tlW/Math.max(bgs.length,1)-4);
 
   return isDesktop?(
-    <div style={{display:"flex",height:"calc(100vh - 106px)",overflow:"hidden",width:"100%",background:"#f0f0f6",paddingBottom:60,padding:"3%",gap:"2%",boxSizing:"border-box"}}>
+    <div style={{display:"flex",height:"calc(100vh - 106px)",overflow:"hidden",width:"100%",background:"#f0f0f6",padding:"3%",paddingBottom:64,gap:"2%",boxSizing:"border-box"}}>
 
       {/* LEFT COLUMN — Creative controls (31%) */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderRadius:16,background:"#ffffff",boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
@@ -1077,7 +1059,7 @@ function ThreeColLayout({left,centre,right,accentColor,canExport,onRender,export
   const col={display:"flex",flexDirection:"column",overflow:"hidden",borderRadius:16,boxShadow:"0 2px 16px rgba(0,0,0,0.06)"};
   if(!isDesktop) return mobile;
   return(
-    <div style={{display:"flex",height:"calc(100vh - 106px)",overflow:"hidden",width:"100%",background:"#f0f0f6",padding:"3%",gap:"2%",boxSizing:"border-box",paddingBottom:60}}>
+    <div style={{display:"flex",height:"calc(100vh - 106px)",overflow:"hidden",width:"100%",background:"#f0f0f6",padding:"3%",paddingBottom:64,gap:"2%",boxSizing:"border-box"}}>
       {/* LEFT — controls */}
       <div style={{...col,flex:1,background:"#ffffff"}}>
         <div style={{flex:1,overflowY:"auto",padding:"14px 14px 8px",display:"flex",flexDirection:"column",gap:10}}>
