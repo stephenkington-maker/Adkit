@@ -32,6 +32,12 @@ input[type=range]{accent-color:#7c3aed;cursor:pointer;width:100%}
 @keyframes pulseGreen{0%,100%{box-shadow:0 0 16px rgba(52,211,153,0.3)}50%{box-shadow:0 0 32px rgba(52,211,153,0.6)}}
 @keyframes gradientShift{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes marqueeLeft{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes marqueeRight{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+.marquee-track{display:flex;width:max-content;will-change:transform}
+.marquee-left{animation:marqueeLeft 38s linear infinite}
+.marquee-right{animation:marqueeRight 38s linear infinite}
+.marquee-row:hover .marquee-track{animation-play-state:paused}
 .animated-gradient{background:linear-gradient(90deg,#7c3aed,#c026d3,#ec4899,#f97316,#ec4899,#c026d3,#7c3aed);background-size:300% 300%;animation:gradientShift 4s ease infinite;}
 .glass{background:rgba(255,255,255,0.7);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.8);box-shadow:0 4px 24px rgba(0,0,0,0.06);}
 .glass-dark{background:rgba(15,15,25,0.85);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);}
@@ -295,6 +301,10 @@ function FlickApp(){
   const[showCta,setShowCta]=useState(false);
   const[ctaPos,setCtaPos]=useState({x:50,y:91});
   const[ctaSize,setCtaSize]=useState(32);
+  // Background colour overlay (tint)
+  const[overlayOn,setOverlayOn]=useState(true);
+  const[overlayColor,setOverlayColor]=useState("black"); // "black" | "white"
+  const[overlayOpacity,setOverlayOpacity]=useState(22); // 0-100
   const[emojiSize,setEmojiSize]=useState(40);
   // Per-element positions (all as % of canvas)
   const[logoPos,setLogoPos]=useState({x:50,y:50,s:55});
@@ -327,7 +337,7 @@ function FlickApp(){
   const R=RATIOS.find(r=>r.key===ratio);
 
   useEffect(()=>{posRef.current={x:lx,y:ly,s:logoScale}},[lx,ly,logoScale]);
-  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,ctaPos,ctaSize]);
+  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize,overlayOn,overlayColor,overlayOpacity}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,ctaPos,ctaSize,overlayOn,overlayColor,overlayOpacity]);
   useEffect(()=>{if(!logo){logoRef.current=null;return}loadImg(logo).then(i=>logoRef.current=i)},[logo]);
   // Track whether all current bg images have finished loading
   const[bgsReady,setBgsReady]=useState(false);
@@ -351,11 +361,17 @@ function FlickApp(){
     const W=canvas.width,H=canvas.height;
     ctx.clearRect(0,0,W,H);
     // Background
+    const ov=overlayRef.current;
     const bg=bgRefs.current[bgIdx];
     if(bg){const s=Math.max(W/bg.width,H/bg.height);const sw=bg.width*s,sh=bg.height*s;ctx.drawImage(bg,(W-sw)/2,(H-sh)/2,sw,sh)}
     else{ctx.fillStyle="#111118";ctx.fillRect(0,0,W,H)}
-    ctx.globalAlpha=0.22;ctx.fillStyle="#000";ctx.fillRect(0,0,W,H);ctx.globalAlpha=1;
-    const ov=overlayRef.current;
+    // User-controlled colour overlay (black or white tint)
+    if(ov.overlayOn&&ov.overlayOpacity>0){
+      ctx.globalAlpha=ov.overlayOpacity/100;
+      ctx.fillStyle=ov.overlayColor==="white"?"#fff":"#000";
+      ctx.fillRect(0,0,W,H);
+      ctx.globalAlpha=1;
+    }
 
     // Helper: draw selection guide around a rect
     const guide=(rx,ry,rw,rh,el)=>{
@@ -475,7 +491,7 @@ function FlickApp(){
 
   useEffect(()=>{
     if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60);
-  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize,drawFrame,playing]);
+  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize,overlayOn,overlayColor,overlayOpacity,drawFrame,playing]);
 
   // Multi-element drag system — always reads latest from overlayRef
   useEffect(()=>{
@@ -923,6 +939,36 @@ function FlickApp(){
         )}
       </div>
 
+      {/* Background overlay tint card */}
+      <div style={card}>
+        <div style={{...secTitle,color:"#6b7280",marginBottom:overlayOn?12:0}}>
+          <span style={{width:6,height:6,borderRadius:"50%",background:"#6b7280",flexShrink:0,display:"inline-block"}}/>
+          Overlay
+          <span style={{fontSize:8,color:"#9ca3af",fontWeight:500,marginLeft:2,fontFamily:"Montserrat,sans-serif"}}>optional</span>
+          <button onClick={()=>{setOverlayOn(p=>!p);setBlob(null)}} style={{marginLeft:"auto",padding:"3px 10px",borderRadius:6,border:"1px solid",borderColor:overlayOn?"rgba(107,114,128,0.4)":"rgba(0,0,0,0.1)",background:overlayOn?"rgba(107,114,128,0.1)":"rgba(0,0,0,0.03)",color:overlayOn?"#374151":"#6b7280",fontSize:10,fontWeight:700,cursor:"pointer"}}>
+            {overlayOn?"✓ On":"Off"}
+          </button>
+        </div>
+        {overlayOn&&(
+          <div style={{display:"flex",flexDirection:"column",gap:10}}>
+            <div style={{display:"flex",gap:6}}>
+              <button onClick={()=>{setOverlayColor("black");setBlob(null)}} style={{flex:1,padding:"8px",borderRadius:8,border:overlayColor==="black"?"2px solid #7c3aed":"1px solid rgba(0,0,0,0.1)",background:"#0a0a0f",color:"#fff",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <span style={{width:12,height:12,borderRadius:99,background:"#000",border:"1px solid rgba(255,255,255,0.3)",flexShrink:0}}/>Black
+              </button>
+              <button onClick={()=>{setOverlayColor("white");setBlob(null)}} style={{flex:1,padding:"8px",borderRadius:8,border:overlayColor==="white"?"2px solid #7c3aed":"1px solid rgba(0,0,0,0.1)",background:"#fff",color:"#111118",fontSize:11,fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:6}}>
+                <span style={{width:12,height:12,borderRadius:99,background:"#fff",border:"1px solid rgba(0,0,0,0.2)",flexShrink:0}}/>White
+              </button>
+            </div>
+            <div>
+              <div style={{display:"flex",justifyContent:"space-between",marginBottom:5}}>
+                <span style={{fontSize:9,fontWeight:700,color:"#6b7280",letterSpacing:"0.07em",textTransform:"uppercase"}}>Opacity</span>
+                <span style={{fontSize:9,color:"#9ca3af"}}>{overlayOpacity}%</span>
+              </div>
+              <input type="range" min="0" max="100" value={overlayOpacity} onChange={e=>{setOverlayOpacity(Number(e.target.value));setBlob(null)}}/>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Audio card */}
       <div style={card}>
@@ -960,7 +1006,7 @@ function FlickApp(){
   const tlItemW=Math.min(36,tlW/Math.max(bgs.length,1)-4);
 
   return isDesktop?(
-    <div style={{display:"flex",height:"calc(100vh - 106px)",overflow:"hidden",width:"100%",background:"#f0f0f6",padding:"3%",paddingBottom:64,gap:"2%",boxSizing:"border-box"}}>
+    <div style={{display:"flex",height:"calc(100vh - 106px)",overflow:"hidden",width:"100%",background:"#fafafa",padding:"3%",paddingBottom:64,gap:"2%",boxSizing:"border-box"}}>
 
       {/* LEFT COLUMN — Creative controls (31%) */}
       <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",borderRadius:16,background:"#ffffff",boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
@@ -1071,7 +1117,7 @@ function ThreeColLayout({left,centre,right,accentColor,canExport,onRender,export
   const col={display:"flex",flexDirection:"column",overflow:"hidden",borderRadius:16,boxShadow:"0 2px 16px rgba(0,0,0,0.06)"};
   if(!isDesktop) return mobile;
   return(
-    <div style={{display:"flex",height:"calc(100vh - 106px)",overflow:"hidden",width:"100%",background:"#f0f0f6",padding:"3%",paddingBottom:64,gap:"2%",boxSizing:"border-box"}}>
+    <div style={{display:"flex",height:"calc(100vh - 106px)",overflow:"hidden",width:"100%",background:"#fafafa",padding:"3%",paddingBottom:64,gap:"2%",boxSizing:"border-box"}}>
       {/* LEFT — controls */}
       <div style={{...col,flex:1,background:"#ffffff"}}>
         <div style={{flex:1,overflowY:"auto",padding:"14px 14px 8px",display:"flex",flexDirection:"column",gap:10}}>
@@ -1809,6 +1855,40 @@ function HomePage({onSelect}){
         )}
       </div>
 
+      {/* ── SHOWCASE — auto-scrolling examples ── */}
+      <div style={{padding:isWide?"48px 0 0":"32px 0 0",width:"100%"}}>
+        <div style={{maxWidth:1200,margin:"0 auto",padding:isWide?"0 40px":"0 18px",marginBottom:18}}>
+          <h2 style={{fontFamily:"'Montserrat',sans-serif",fontSize:isWide?22:18,fontWeight:800,color:"#0a0a0f",letterSpacing:"-0.01em",margin:0}}>Made with ScrollJack</h2>
+          <p style={{fontSize:13,color:"#9ca3af",margin:"4px 0 0"}}>Real ads, created in seconds.</p>
+        </div>
+
+        {/* Row 1 — scrolls left */}
+        <div className="marquee-row" style={{overflow:"hidden",marginBottom:12,WebkitMaskImage:"linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)",maskImage:"linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)"}}>
+          <div className="marquee-track marquee-left" style={{gap:12,padding:"0 0"}}>
+            {[...Array(2)].map((_,rep)=>(
+              <div key={rep} style={{display:"flex",gap:12}}>
+                {[...Array(8)].map((_,i)=>(
+                  <div key={i} style={{width:140,height:240,borderRadius:14,flexShrink:0,background:`linear-gradient(160deg,hsl(${(i*47)%360} 60% 88%),hsl(${(i*47+40)%360} 55% 78%))`,border:"1px solid rgba(0,0,0,0.06)"}}/>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 2 — scrolls right */}
+        <div className="marquee-row" style={{overflow:"hidden",WebkitMaskImage:"linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)",maskImage:"linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)"}}>
+          <div className="marquee-track marquee-right" style={{gap:12,padding:"0 0"}}>
+            {[...Array(2)].map((_,rep)=>(
+              <div key={rep} style={{display:"flex",gap:12}}>
+                {[...Array(8)].map((_,i)=>(
+                  <div key={i} style={{width:140,height:240,borderRadius:14,flexShrink:0,background:`linear-gradient(200deg,hsl(${(i*61+20)%360} 55% 86%),hsl(${(i*61+60)%360} 50% 76%))`,border:"1px solid rgba(0,0,0,0.06)"}}/>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* ── 3-COL MANIFESTO ── */}
       <div style={{padding:isWide?"48px 40px 64px":"32px 18px 40px",maxWidth:1200,margin:"0 auto",width:"100%"}}>
         <div style={{display:"grid",gridTemplateColumns:isWide?"1fr 1fr 1fr":"1fr",gap:isWide?0:14,padding:isWide?"28px 32px":"20px",borderRadius:16,background:"#f7f7f9",border:"1px solid rgba(0,0,0,0.06)"}}>
@@ -2010,7 +2090,7 @@ function Root(){
   useEffect(()=>{window.__setContact=setContactOpen;return()=>{delete window.__setContact}},[]);
   const activeAppMeta=APPS.find(a=>a.id===activeApp);
   return(
-    <div style={{minHeight:"100vh",background:"#f0f0f6",display:"flex",flexDirection:"column"}}>
+    <div style={{minHeight:"100vh",background:"#fafafa",display:"flex",flexDirection:"column"}}>
       <header style={{position:"sticky",top:0,zIndex:100,height:64,display:"flex",alignItems:"center",padding:isWide?"0 32px":"0 16px",gap:12,background:activeApp?"#0d0d14":"#ffffff",backdropFilter:"blur(20px)",WebkitBackdropFilter:"blur(20px)",borderBottom:activeApp?"1px solid rgba(255,255,255,0.07)":"1px solid rgba(0,0,0,0.07)",flexShrink:0,boxShadow:activeApp?"0 2px 16px rgba(0,0,0,0.3)":"0 1px 0 rgba(0,0,0,0.04)"}}>
         <button onClick={()=>setActiveApp(null)} style={{display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0,flexShrink:0}}>
           <img src={LOGO_URL} alt="Scrolljack" style={{height:32,width:"auto",display:"block",filter:activeApp?"invert(1)":"none"}}/>
@@ -2029,9 +2109,6 @@ function Root(){
         {!activeApp&&(
           <div style={{display:"flex",alignItems:"center",gap:10}}>
             <button onClick={()=>setActiveApp("flick")} style={{padding:"10px 20px",borderRadius:99,fontSize:13,fontWeight:700,color:"#fff",background:"#0a0a0f",border:"none",cursor:"pointer"}}>Start creating</button>
-            <button style={{width:38,height:38,borderRadius:99,border:"1px solid rgba(0,0,0,0.12)",background:"#fff",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",flexShrink:0}}>
-              <span style={{fontSize:16,color:"#374151"}}>☰</span>
-            </button>
           </div>
         )}
       </header>
