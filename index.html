@@ -293,6 +293,8 @@ function FlickApp(){
   // CTA link text
   const[ctaText,setCtaText]=useState("");
   const[showCta,setShowCta]=useState(false);
+  const[ctaPos,setCtaPos]=useState({x:50,y:91});
+  const[ctaSize,setCtaSize]=useState(32);
   const[emojiSize,setEmojiSize]=useState(40);
   // Per-element positions (all as % of canvas)
   const[logoPos,setLogoPos]=useState({x:50,y:50,s:55});
@@ -325,7 +327,7 @@ function FlickApp(){
   const R=RATIOS.find(r=>r.key===ratio);
 
   useEffect(()=>{posRef.current={x:lx,y:ly,s:logoScale}},[lx,ly,logoScale]);
-  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos]);
+  useEffect(()=>{overlayRef.current={mode:overlayMode,text:textLine,font:textFont,color:textColor,size:textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize}},[overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,ctaPos,ctaSize]);
   useEffect(()=>{if(!logo){logoRef.current=null;return}loadImg(logo).then(i=>logoRef.current=i)},[logo]);
   // Track whether all current bg images have finished loading
   const[bgsReady,setBgsReady]=useState(false);
@@ -433,17 +435,20 @@ function FlickApp(){
       ctx.textAlign="left";ctx.textBaseline="alphabetic";
     }
 
-    // CTA link text — bottom of safe zone
+    // CTA link text — draggable/scalable like other elements
     if(ov.showCta&&ov.ctaText){
-      const fs=Math.round(sz.w*0.032);
+      const cp=ov.ctaPos||{x:50,y:91};
+      const cSize=ov.ctaSize||32;
+      const fs=Math.round(sz.w*(cSize/100)*0.1);
       ctx.font=`500 ${fs}px 'Poppins',sans-serif`;
       ctx.fillStyle="rgba(255,255,255,0.75)";
       ctx.textAlign="center";ctx.textBaseline="middle";
       const tw=ctx.measureText(ov.ctaText).width;
-      const ctaY=szY(91);
-      ctx.fillText(ov.ctaText,szX(50),ctaY);
+      const ctaX=szX(cp.x),ctaY=szY(cp.y);
+      ctx.fillText(ov.ctaText,ctaX,ctaY);
       ctx.strokeStyle="rgba(255,255,255,0.45)";ctx.lineWidth=0.8;
-      ctx.beginPath();ctx.moveTo(szX(50)-tw/2,ctaY+fs*0.6);ctx.lineTo(szX(50)+tw/2,ctaY+fs*0.6);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(ctaX-tw/2,ctaY+fs*0.6);ctx.lineTo(ctaX+tw/2,ctaY+fs*0.6);ctx.stroke();
+      guide(ctaX-tw/2-6,ctaY-fs/2-6,tw+12,fs+fs*0.6+12,"cta");
       ctx.textAlign="left";ctx.textBaseline="alphabetic";
     }
   },[]);
@@ -470,7 +475,7 @@ function FlickApp(){
 
   useEffect(()=>{
     if(!playing)setTimeout(()=>{if(prevRef.current)drawFrame(prevRef.current,0,activeElRef.current)},60);
-  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,drawFrame,playing]);
+  },[logo,bgs,logoScale,lx,ly,editMode,overlayMode,textLine,textFont,textColor,textSize,subline,subColor,subSize,emoji,emojiSize,logoPos,textPos,subPos,emojiPos,logoColor,ctaText,showCta,ctaPos,ctaSize,drawFrame,playing]);
 
   // Multi-element drag system — always reads latest from overlayRef
   useEffect(()=>{
@@ -489,6 +494,7 @@ function FlickApp(){
       if(ov.mode==="text"&&ov.text)candidates.push({el:"text",dx:Math.abs(px-ov.textPos.x),dy:Math.abs(py-ov.textPos.y)});
       if(ov.mode==="logo")candidates.push({el:"logo",dx:Math.abs(px-ov.logoPos.x),dy:Math.abs(py-ov.logoPos.y)});
       if(ov.subline)candidates.push({el:"sub",dx:Math.abs(px-ov.subPos.x),dy:Math.abs(py-ov.subPos.y)});
+      if(ov.showCta&&ov.ctaText)candidates.push({el:"cta",dx:Math.abs(px-(ov.ctaPos?.x||50)),dy:Math.abs(py-(ov.ctaPos?.y||91))});
       if(!candidates.length)return"logo";
       // Return element whose centre is closest to click point
       candidates.sort((a,b)=>(a.dx+a.dy)-(b.dx+b.dy));
@@ -500,6 +506,7 @@ function FlickApp(){
       if(el==="logo")return ov.logoPos;
       if(el==="text")return ov.textPos;
       if(el==="sub")return ov.subPos;
+      if(el==="cta")return ov.ctaPos||{x:50,y:91};
       return ov.emojiPos;
     };
 
@@ -510,6 +517,7 @@ function FlickApp(){
       else if(el==="text"){const np={...ov2.textPos,x:nx,y:ny};overlayRef.current={...ov2,textPos:np};setTextPos(np)}
       else if(el==="sub"){const np={...ov2.subPos,x:nx,y:ny};overlayRef.current={...ov2,subPos:np};setSubPos(np)}
       else if(el==="emoji"){const np={...ov2.emojiPos,x:nx,y:ny};overlayRef.current={...ov2,emojiPos:np};setEmojiPos(np)}
+      else if(el==="cta"){const np={x:nx,y:ny};overlayRef.current={...ov2,ctaPos:np};setCtaPos(np)}
     };
 
     const onMouseDown=e=>{
@@ -542,6 +550,7 @@ function FlickApp(){
       else if(el==="text"){setTextSize(v=>Math.max(10,Math.min(100,v+delta)));overlayRef.current={...ov2,size:Math.max(10,Math.min(100,ov2.size+delta))}}
       else if(el==="sub"){setSubSize(v=>Math.max(10,Math.min(80,v+delta)));overlayRef.current={...ov2,subSize:Math.max(10,Math.min(80,ov2.subSize+delta))}}
       else if(el==="emoji"){setEmojiSize(v=>Math.max(10,Math.min(90,v+delta)));overlayRef.current={...ov2,emojiSize:Math.max(10,Math.min(90,ov2.emojiSize+delta))}}
+      else if(el==="cta"){setCtaSize(v=>Math.max(10,Math.min(90,v+delta)));overlayRef.current={...ov2,ctaSize:Math.max(10,Math.min(90,(ov2.ctaSize||32)+delta))}}
       if(prevRef.current)drawFrame(prevRef.current,bgIdxRef.current||0,activeElRef.current);
     };
     const onTouchStart=e=>{
@@ -550,14 +559,16 @@ function FlickApp(){
         const cx=t.clientX-r.left,cy=t.clientY-r.top;
         const el=hitTest(cx,cy,r.width,r.height);
         activeElRef.current=el;setActiveEl(el);
+        const tPos=el==="logo"?overlayRef.current.logoPos:el==="text"?overlayRef.current.textPos:el==="sub"?overlayRef.current.subPos:el==="cta"?(overlayRef.current.ctaPos||{x:50,y:91}):overlayRef.current.emojiPos;
         dragRef.current={active:true,startX:t.clientX,startY:t.clientY,
-          startLx:overlayRef.current[el==="logo"?"logoPos":el==="text"?"textPos":el==="sub"?"subPos":"emojiPos"].x,
-          startLy:overlayRef.current[el==="logo"?"logoPos":el==="text"?"textPos":el==="sub"?"subPos":"emojiPos"].y};
+          startLx:tPos.x,
+          startLy:tPos.y};
         pinchRef.current.active=false;
       }else if(e.touches.length===2){
         dragRef.current.active=false;
-        pinchRef.current={active:true,startDist:dist(e.touches[0],e.touches[1]),
-          startScale:overlayRef.current[activeElRef.current==="text"?"textSize":activeElRef.current==="sub"?"subSize":activeElRef.current==="emoji"?"emojiSize":"logoPos"].s||overlayRef.current.logoPos.s};
+        const elNow=activeElRef.current;
+        const startScaleVal=elNow==="text"?overlayRef.current.size:elNow==="sub"?overlayRef.current.subSize:elNow==="emoji"?overlayRef.current.emojiSize:elNow==="cta"?(overlayRef.current.ctaSize||32):overlayRef.current.logoPos.s;
+        pinchRef.current={active:true,startDist:dist(e.touches[0],e.touches[1]),startScale:startScaleVal};
       }
     };
     const onTouchMove=e=>{
@@ -575,6 +586,8 @@ function FlickApp(){
         if(el==="logo"){const ns=Math.max(5,Math.min(95,pinchRef.current.startScale*ratio2));const np={...ov2.logoPos,s:ns};overlayRef.current={...ov2,logoPos:np};setLogoPos(np);setLogoScale(ns)}
         else if(el==="text"){setTextSize(Math.max(10,Math.min(100,pinchRef.current.startScale*ratio2)))}
         else if(el==="emoji"){setEmojiSize(Math.max(10,Math.min(90,pinchRef.current.startScale*ratio2)))}
+        else if(el==="sub"){setSubSize(Math.max(10,Math.min(80,pinchRef.current.startScale*ratio2)))}
+        else if(el==="cta"){setCtaSize(Math.max(10,Math.min(90,pinchRef.current.startScale*ratio2)))}
       }
     };
     const onTouchEnd=()=>{dragRef.current.active=false;pinchRef.current.active=false};
@@ -875,7 +888,7 @@ function FlickApp(){
       {/* Drag hint */}
       <div style={{padding:"10px 12px",borderRadius:9,background:"rgba(124,58,237,0.06)",border:"1px solid rgba(124,58,237,0.2)"}}>
         <div style={{fontSize:10,color:"#6b7280",lineHeight:1.5}}>
-          {activeEl?<span style={{color:"#c4b5fd"}}>✥ <strong style={{textTransform:"capitalize"}}>{activeEl==="sub"?"subline":activeEl}</strong> selected — drag to move · scroll/pinch to resize</span>:"✥ Drag any element on the preview to move it · scroll to resize"}
+          {activeEl?<span style={{color:"#c4b5fd"}}>✥ <strong style={{textTransform:"capitalize"}}>{activeEl==="sub"?"subline":activeEl==="cta"?"CTA link":activeEl}</strong> selected — drag to move · scroll/pinch to resize</span>:"✥ Drag any element on the preview to move it · scroll to resize"}
         </div>
       </div>
 
@@ -965,7 +978,7 @@ function FlickApp(){
         {/* Label + play */}
         <div style={{width:previewW,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <span style={{fontSize:10,fontWeight:700,color:activeEl?"#7c3aed":"#9ca3af",letterSpacing:"0.08em",textTransform:"uppercase"}}>
-            {activeEl?`✥ ${activeEl==="sub"?"subline":activeEl}`:`Preview · ${ratio.replace("x",":")} · ${duration}s`}
+            {activeEl?`✥ ${activeEl==="sub"?"subline":activeEl==="cta"?"CTA link":activeEl}`:`Preview · ${ratio.replace("x",":")} · ${duration}s`}
           </span>
           <PlayBtn playing={playing} onToggle={()=>setPlaying(p=>!p)}/>
         </div>
@@ -1869,11 +1882,13 @@ function FlickTimeline(){
   if(!state)return null;
   const{bgs,curBg,playing,duration,ratio}=state;
   const maxItems=Math.min(bgs.length,40);
+  const isD=window.innerWidth>=900;
   const itemW=Math.max(28,Math.min(64,(window.innerWidth*0.7)/Math.max(bgs.length,1)-4));
   return(
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"rgba(15,15,20,0.96)",backdropFilter:"blur(12px)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"8px 16px 10px",display:"flex",alignItems:"center",gap:12}}>
+      {isD&&<div style={{flex:1}}/>}
       <span style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.35)",letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Timeline</span>
-      <div style={{flex:1,display:"flex",gap:3,overflowX:"auto",alignItems:"center",padding:"2px 0"}}>
+      <div style={{flex:isD?"0 1 auto":1,display:"flex",gap:3,overflowX:"auto",alignItems:"center",padding:"2px 0",justifyContent:isD?"center":"flex-start"}}>
         {bgs.length>0?bgs.slice(0,maxItems).map((s,i)=>(
           <div key={i} style={{position:"relative",width:itemW,height:38,borderRadius:6,overflow:"hidden",flexShrink:0,border:curBg===i&&playing?"2px solid #7c3aed":"2px solid rgba(255,255,255,0.1)",transition:"border-color 0.1s",boxShadow:curBg===i&&playing?"0 0 8px rgba(124,58,237,0.5)":"none"}}>
             <img src={s} style={{width:"100%",height:"100%",objectFit:"cover"}} alt=""/>
@@ -1883,7 +1898,7 @@ function FlickTimeline(){
           <span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>Add backgrounds to see timeline</span>
         )}
       </div>
-      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0,gap:2}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",flexShrink:0,gap:2,flex:isD?1:undefined}}>
         <span style={{fontSize:9,color:"rgba(255,255,255,0.35)",letterSpacing:"0.06em"}}>{ratio?.replace("x",":")} · {duration}s</span>
         {bgs.length>0&&<span style={{fontSize:9,color:"rgba(255,255,255,0.2)"}}>{curBg+1}/{bgs.length}</span>}
       </div>
@@ -1897,17 +1912,19 @@ function ProofTimeline(){
   useEffect(()=>{const iv=setInterval(()=>{if(window.__proofState)setState({...window.__proofState})},100);return()=>clearInterval(iv)},[]);
   if(!state)return null;
   const{items,curSlide,playing}=state;
+  const isD=window.innerWidth>=900;
   return(
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"rgba(15,15,20,0.96)",backdropFilter:"blur(12px)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"8px 16px 10px",display:"flex",alignItems:"center",gap:12}}>
+      {isD&&<div style={{flex:1}}/>}
       <span style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.35)",letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Timeline</span>
-      <div style={{flex:1,display:"flex",gap:3,overflowX:"auto",alignItems:"center"}}>
+      <div style={{flex:isD?"0 1 auto":1,display:"flex",gap:3,overflowX:"auto",alignItems:"center",justifyContent:isD?"center":"flex-start"}}>
         {items.length>0?items.map((_,i)=>(
           <div key={i} style={{flexShrink:0,height:38,minWidth:48,borderRadius:6,background:curSlide===i&&playing?"rgba(14,165,233,0.3)":"rgba(255,255,255,0.06)",border:curSlide===i&&playing?"2px solid #0ea5e9":"2px solid rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.1s",padding:"0 8px"}}>
             <span style={{fontSize:9,color:curSlide===i&&playing?"#7dd3fc":"rgba(255,255,255,0.4)",fontWeight:700}}>Slide {i+1}</span>
           </div>
         )):<span style={{fontSize:10,color:"rgba(255,255,255,0.2)"}}>Add testimonials to see timeline</span>}
       </div>
-      <span style={{fontSize:9,color:"rgba(255,255,255,0.35)",flexShrink:0}}>{curSlide+1}/{items.length}</span>
+      <span style={{fontSize:9,color:"rgba(255,255,255,0.35)",flexShrink:0,flex:isD?1:undefined,textAlign:"right"}}>{curSlide+1}/{items.length}</span>
     </div>
   );
 }
@@ -1917,16 +1934,19 @@ function MiniTimeline({stateKey,slots,color}){
   const[state,setState]=useState(null);
   useEffect(()=>{const iv=setInterval(()=>{if(window[stateKey])setState({...window[stateKey]})},100);return()=>clearInterval(iv)},[stateKey]);
   if(!state)return null;
+  const isD=window.innerWidth>=900;
   return(
     <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:50,background:"rgba(15,15,20,0.96)",backdropFilter:"blur(12px)",borderTop:"1px solid rgba(255,255,255,0.08)",padding:"8px 16px 10px",display:"flex",alignItems:"center",gap:12}}>
+      {isD&&<div style={{flex:1}}/>}
       <span style={{fontSize:9,fontWeight:700,color:"rgba(255,255,255,0.35)",letterSpacing:"0.1em",textTransform:"uppercase",flexShrink:0}}>Timeline</span>
-      <div style={{flex:1,display:"flex",gap:3,overflowX:"auto",alignItems:"center"}}>
+      <div style={{flex:isD?"0 1 auto":1,display:"flex",gap:3,overflowX:"auto",alignItems:"center",justifyContent:isD?"center":"flex-start"}}>
         {slots(state).map((slot,i)=>(
           <div key={i} style={{flexShrink:0,height:38,minWidth:52,borderRadius:6,background:slot.active?"rgba("+color+",0.25)":"rgba(255,255,255,0.06)",border:slot.active?"2px solid rgba("+color+",1)":"2px solid rgba(255,255,255,0.1)",display:"flex",alignItems:"center",justifyContent:"center",padding:"0 8px",transition:"all 0.1s"}}>
             <span style={{fontSize:9,color:slot.active?"rgba(255,255,255,0.9)":"rgba(255,255,255,0.4)",fontWeight:700}}>{slot.label}</span>
           </div>
         ))}
       </div>
+      {isD&&<div style={{flex:1}}/>}
     </div>
   );
 }
