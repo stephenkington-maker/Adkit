@@ -961,22 +961,7 @@ function FlickApp(){
       </div>
 
       {/* CENTRE COLUMN — Preview (38%) */}
-      <div style={{flex:1.2,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"16px 12px 12px",gap:8,background:"#e8e8f0",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
-        {/* Render button above preview */}
-        <div style={{width:previewW,flexShrink:0}}>
-          {renderWarn&&<p style={{fontSize:10,color:"#ef4444",textAlign:"center",marginBottom:5,fontWeight:600}}>⚠ {renderWarn}</p>}
-          <button onClick={()=>{
-            if(bgs.length===0){setRenderWarn("Add background images first");return}
-            if(overlayMode==="logo"&&!logo){setRenderWarn("Upload a logo first");return}
-            if(overlayMode==="text"&&!textLine.trim()){setRenderWarn("Enter some text first");return}
-            setRenderWarn("");run(R2.w,R2.h);
-          }} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"11px",borderRadius:10,border:"2px solid rgba(0,0,0,0.18)",background:exporting?"rgba(0,0,0,0.06)":undefined,color:"#fff",fontSize:13,fontWeight:800,cursor:exporting?"not-allowed":"pointer",letterSpacing:"0.04em",boxShadow:!exporting?"0 2px 16px rgba(124,58,237,0.25)":"none",transition:"all 0.18s",opacity:exporting?0.6:1}}>
-            {exporting?(exportStatus||`Rendering… ${prog}%`):"⚙ Render Video"}
-          </button>
-          {exporting&&<div style={{height:2,borderRadius:99,background:"rgba(0,0,0,0.1)",overflow:"hidden",marginTop:5}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
-          {blob&&!exporting&&<button onClick={download} style={{width:"100%",padding:"9px",borderRadius:9,border:"1px solid rgba(52,211,153,0.5)",background:"rgba(52,211,153,0.1)",color:"#059669",fontSize:12,fontWeight:800,cursor:"pointer",marginTop:5,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {audio?"+ Audio":""} .webm · {blob?(blob.size/1024/1024).toFixed(1):0} MB</button>}
-          {!exporting&&!blob&&!renderWarn&&<p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:4}}>{bgs.length===0?"Add backgrounds first":!logo&&overlayMode==="logo"?"Upload a logo first":"✓ Ready"}</p>}
-        </div>
+      <div style={{flex:1.2,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"16px 12px 12px",gap:8,background:"#e8e8f0",borderRadius:16,overflow:"hidden",boxShadow:"0 2px 16px rgba(0,0,0,0.06)"}}>
         {/* Label + play */}
         <div style={{width:previewW,display:"flex",alignItems:"center",justifyContent:"space-between",flexShrink:0}}>
           <span style={{fontSize:10,fontWeight:700,color:activeEl?"#7c3aed":"#9ca3af",letterSpacing:"0.08em",textTransform:"uppercase"}}>
@@ -1026,7 +1011,21 @@ function FlickApp(){
           </div>
         </div>
 
-        {/* Render button handled by centre col above preview */}
+        {/* Render button — below export settings */}
+        <div style={{flexShrink:0,padding:"10px 14px 14px",borderTop:"1px solid rgba(0,0,0,0.06)"}}>
+          {renderWarn&&<p style={{fontSize:10,color:"#ef4444",textAlign:"center",marginBottom:5,fontWeight:600}}>⚠ {renderWarn}</p>}
+          <button onClick={()=>{
+            if(bgs.length===0){setRenderWarn("Add background images first");return}
+            if(overlayMode==="logo"&&!logo){setRenderWarn("Upload a logo first");return}
+            if(overlayMode==="text"&&!textLine.trim()){setRenderWarn("Enter some text first");return}
+            setRenderWarn("");run(R2.w,R2.h);
+          }} disabled={exporting} className={!exporting?"animated-gradient":""} style={{width:"100%",padding:"13px",borderRadius:10,border:"2px solid rgba(0,0,0,0.18)",background:exporting?"rgba(0,0,0,0.06)":undefined,color:"#fff",fontSize:13,fontWeight:800,cursor:exporting?"not-allowed":"pointer",letterSpacing:"0.04em",boxShadow:!exporting?"0 2px 16px rgba(124,58,237,0.25)":"none",transition:"all 0.18s",opacity:exporting?0.6:1}}>
+            {exporting?(exportStatus||`Rendering… ${prog}%`):"⚙ Render Video"}
+          </button>
+          {exporting&&<div style={{height:2,borderRadius:99,background:"rgba(0,0,0,0.1)",overflow:"hidden",marginTop:5}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
+          {blob&&!exporting&&<button onClick={download} style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid rgba(52,211,153,0.5)",background:"rgba(52,211,153,0.1)",color:"#059669",fontSize:12,fontWeight:800,cursor:"pointer",marginTop:6,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {audio?"+ Audio":""} .webm · {blob?(blob.size/1024/1024).toFixed(1):0} MB</button>}
+          {!exporting&&!blob&&!renderWarn&&<p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:5}}>{bgs.length===0?"Add backgrounds first":!logo&&overlayMode==="logo"?"Upload a logo first":"✓ Ready"}</p>}
+        </div>
       </div>
     </div>
   ):(
