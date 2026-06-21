@@ -280,6 +280,16 @@ async function listSetups(appId){
 async function deleteSetup(appId,id){
   try{await window.storage.delete(`setup:${appId}:${id}`)}catch(e){}
 }
+async function renameSetup(appId,id,newName){
+  try{
+    const r=await window.storage.get(`setup:${appId}:${id}`);
+    if(!r)return null;
+    const entry=JSON.parse(r.value);
+    entry.name=newName.trim()||entry.name;
+    await window.storage.set(`setup:${appId}:${id}`,JSON.stringify(entry));
+    return entry;
+  }catch(e){return null}
+}
 
 function AccountModal({open,onClose}){
   const{signIn}=useAccount();
@@ -333,6 +343,8 @@ function SaveSetupCard({appId,appColor,getData,onLoad}){
   const[panelOpen,setPanelOpen]=useState(false);
   const[setups,setSetups]=useState([]);
   const[loadingList,setLoadingList]=useState(false);
+  const[editingId,setEditingId]=useState(null);
+  const[editingName,setEditingName]=useState("");
 
   const refreshList=async()=>{
     setLoadingList(true);
@@ -351,6 +363,13 @@ function SaveSetupCard({appId,appColor,getData,onLoad}){
     if(panelOpen)refreshList();
   };
 
+  const startRename=s=>{setEditingId(s.id);setEditingName(s.name)};
+  const commitRename=async id=>{
+    if(editingName.trim())await renameSetup(appId,id,editingName);
+    setEditingId(null);
+    refreshList();
+  };
+
   return(
     <div className="card-white" style={{padding:"12px 14px"}}>
       <div style={{...secTitle,color:appColor,marginBottom:10}}>
@@ -363,22 +382,29 @@ function SaveSetupCard({appId,appColor,getData,onLoad}){
         <div style={{display:"flex",flexDirection:"column",gap:8}}>
           <div style={{display:"flex",gap:6}}>
             <input value={name} onChange={e=>setName(e.target.value)} placeholder="Name this setup…" style={{flex:1,padding:"8px 10px",borderRadius:8,background:"#f5f5fa",border:"1px solid rgba(0,0,0,0.08)",color:"#111118",fontSize:12,outline:"none"}}/>
-            <button onClick={doSave} disabled={saving} style={{padding:"8px 14px",borderRadius:8,border:"none",background:appColor,color:"#fff",fontSize:11,fontWeight:700,cursor:saving?"not-allowed":"pointer",flexShrink:0,opacity:saving?0.6:1}}>{saving?"…":justSaved?"✓ Saved":"Save"}</button>
+            <button onClick={doSave} disabled={saving} style={{padding:"8px 14px",borderRadius:8,border:"none",background:appColor,color:"#fff",fontSize:11,fontWeight:700,cursor:saving?"not-allowed":"pointer",flexShrink:0,opacity:saving?0.6:1}}>{saving?"…":justSaved?"✓ Saved":"💾 Save"}</button>
           </div>
         </div>
       )}
       {panelOpen&&(
-        <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(0,0,0,0.06)",display:"flex",flexDirection:"column",gap:6,maxHeight:220,overflowY:"auto"}}>
+        <div style={{marginTop:10,paddingTop:10,borderTop:"1px solid rgba(0,0,0,0.06)",display:"flex",flexDirection:"column",gap:6,maxHeight:260,overflowY:"auto"}}>
           {loadingList&&<p style={{fontSize:11,color:"#9ca3af",margin:0}}>Loading…</p>}
           {!loadingList&&setups.length===0&&<p style={{fontSize:11,color:"#9ca3af",margin:0}}>No saved setups yet.</p>}
           {setups.map(s=>(
             <div key={s.id} style={{display:"flex",alignItems:"center",gap:6,padding:"7px 9px",borderRadius:8,background:"#f8f8fc"}}>
-              <div style={{flex:1,minWidth:0}}>
-                <div style={{fontSize:11.5,fontWeight:700,color:"#111118",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.name}</div>
-                <div style={{fontSize:9,color:"#9ca3af"}}>{new Date(s.savedAt).toLocaleDateString()}</div>
-              </div>
-              <button onClick={()=>onLoad(s.data)} style={{fontSize:10,fontWeight:700,color:appColor,background:"none",border:"none",cursor:"pointer",padding:"3px 6px"}}>Load</button>
-              <button onClick={async()=>{await deleteSetup(appId,s.id);refreshList()}} style={{fontSize:10,fontWeight:700,color:"#ef4444",background:"none",border:"none",cursor:"pointer",padding:"3px 6px"}}>✕</button>
+              {editingId===s.id?(
+                <input autoFocus value={editingName} onChange={e=>setEditingName(e.target.value)}
+                  onKeyDown={e=>{if(e.key==="Enter")commitRename(s.id);if(e.key==="Escape")setEditingId(null)}}
+                  onBlur={()=>commitRename(s.id)}
+                  style={{flex:1,minWidth:0,padding:"4px 6px",borderRadius:6,border:`1px solid ${appColor}66`,fontSize:11.5,fontWeight:700,color:"#111118",outline:"none"}}/>
+              ):(
+                <div onClick={()=>startRename(s)} style={{flex:1,minWidth:0,cursor:"text"}} title="Click to rename">
+                  <div style={{fontSize:11.5,fontWeight:700,color:"#111118",whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>{s.name} <span style={{opacity:0.35,fontWeight:500}}>✎</span></div>
+                  <div style={{fontSize:9,color:"#9ca3af"}}>{new Date(s.savedAt).toLocaleDateString()}</div>
+                </div>
+              )}
+              <button onClick={()=>onLoad(s.data)} style={{fontSize:10,fontWeight:700,color:appColor,background:"none",border:"none",cursor:"pointer",padding:"3px 6px",flexShrink:0}}>Load</button>
+              <button onClick={async()=>{await deleteSetup(appId,s.id);refreshList()}} style={{fontSize:10,fontWeight:700,color:"#ef4444",background:"none",border:"none",cursor:"pointer",padding:"3px 6px",flexShrink:0}}>✕</button>
             </div>
           ))}
         </div>
@@ -397,6 +423,7 @@ function Pill({active,onClick,color,children}){
 }
 
 function ExportArea({disabled,onRender,exporting,prog,blob,onDownload,label,status}){
+  const isWebm=typeof label==="string"&&label.includes("webm");
   return(
     <div style={{display:"flex",flexDirection:"column",gap:8}}>
       <button onClick={onRender} disabled={disabled} className={!disabled&&!exporting?"animated-gradient":""} style={{width:"100%",padding:"13px",borderRadius:10,border:"none",background:disabled?"rgba(255,255,255,0.05)":exporting?"rgba(255,255,255,0.05)":undefined,color:!disabled?"#fff":C.muted,fontSize:14,fontWeight:800,cursor:!disabled?"pointer":"not-allowed",boxShadow:!disabled&&!exporting?"0 0 28px rgba(200,40,200,0.35)":"none",transition:"all 0.18s"}}>
@@ -404,6 +431,11 @@ function ExportArea({disabled,onRender,exporting,prog,blob,onDownload,label,stat
       </button>
       {exporting&&<div style={{height:3,borderRadius:99,background:"rgba(255,255,255,0.06)",overflow:"hidden"}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
       {blob&&!exporting&&<button onClick={onDownload} style={{width:"100%",padding:"13px",borderRadius:10,border:"1px solid rgba(52,211,153,0.4)",background:"rgba(52,211,153,0.08)",color:"#6ee7b7",fontSize:14,fontWeight:800,cursor:"pointer",animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {label} · {(blob.size/1024/1024).toFixed(1)} MB</button>}
+      {blob&&!exporting&&isWebm&&(
+        <p style={{fontSize:9.5,color:"#9ca3af",textAlign:"center",margin:0,lineHeight:1.5}}>
+          Won't preview in Apple Photos or WhatsApp? <a href="https://cloudconvert.com/webm-to-mp4" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
+        </p>
+      )}
     </div>
   );
 }
@@ -1282,6 +1314,39 @@ function FlickApp(){
                 <div style={{fontSize:12,color:"#9ca3af"}}>♪ Drop MP3 / WAV</div>
               </DZ>}
           </div>
+
+          <SaveSetupCard appId="flick" appColor={C.purple} getData={()=>({
+            ratio,duration,overlayMode,textLine,textFont,textColor,textSize,
+            subline,subColor,subSize,emoji,
+            ctaText,showCta,ctaFont,ctaColor,ctaPos,ctaSize,ctaArrow,
+            logoScale,lx,ly,logoColor,isSvg,
+          })} onLoad={d=>{
+            if(!d)return;
+            if(d.ratio)setRatio(d.ratio);
+            if(d.duration)setDuration(d.duration);
+            if(d.overlayMode)setOverlayMode(d.overlayMode);
+            if(d.textLine!==undefined)setTextLine(d.textLine);
+            if(d.textFont)setTextFont(d.textFont);
+            if(d.textColor)setTextColor(d.textColor);
+            if(d.textSize)setTextSize(d.textSize);
+            if(d.subline!==undefined)setSubline(d.subline);
+            if(d.subColor)setSubColor(d.subColor);
+            if(d.subSize)setSubSize(d.subSize);
+            if(d.emoji!==undefined)setEmoji(d.emoji);
+            if(d.ctaText!==undefined)setCtaText(d.ctaText);
+            if(d.showCta!==undefined)setShowCta(d.showCta);
+            if(d.ctaFont)setCtaFont(d.ctaFont);
+            if(d.ctaColor)setCtaColor(d.ctaColor);
+            if(d.ctaPos)setCtaPos(d.ctaPos);
+            if(d.ctaSize)setCtaSize(d.ctaSize);
+            if(d.ctaArrow!==undefined)setCtaArrow(d.ctaArrow);
+            if(d.logoScale)setLogoScale(d.logoScale);
+            if(d.lx)setLx(d.lx);
+            if(d.ly)setLy(d.ly);
+            if(d.logoColor!==undefined)setLogoColor(d.logoColor);
+            if(d.isSvg!==undefined)setIsSvg(d.isSvg);
+            setBlob(null);
+          }}/>
         </div>
 
         {/* Render button — below export settings */}
@@ -1297,6 +1362,11 @@ function FlickApp(){
           </button>
           {exporting&&<div style={{height:2,borderRadius:99,background:"rgba(0,0,0,0.1)",overflow:"hidden",marginTop:5}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
           {blob&&!exporting&&<button onClick={download} style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid rgba(52,211,153,0.5)",background:"rgba(52,211,153,0.1)",color:"#059669",fontSize:12,fontWeight:800,cursor:"pointer",marginTop:6,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {audio?"+ Audio":""} .{ext} · {blob?(blob.size/1024/1024).toFixed(1):0} MB</button>}
+          {blob&&!exporting&&ext==="webm"&&(
+            <p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:6,lineHeight:1.5}}>
+              Won't preview in Apple Photos or WhatsApp? <a href="https://cloudconvert.com/webm-to-mp4" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
+            </p>
+          )}
           {!exporting&&!blob&&!renderWarn&&<p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:5}}>{bgs.length===0?"Add backgrounds first":!logo&&overlayMode==="logo"?"Upload a logo first":"✓ Ready"}</p>}
         </div>
       </div>
@@ -1354,6 +1424,11 @@ function ThreeColLayout({left,centre,right,accentColor,canExport,onRender,export
           </button>
           {exporting&&<div style={{height:2,borderRadius:99,background:"rgba(0,0,0,0.1)",overflow:"hidden",marginTop:5}}><div style={{height:"100%",width:`${prog}%`,background:"linear-gradient(90deg,#7c3aed,#ec4899)",transition:"width 0.1s",borderRadius:99}}/></div>}
           {blob&&!exporting&&<button onClick={onDownload} style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid rgba(52,211,153,0.5)",background:"rgba(52,211,153,0.1)",color:"#059669",fontSize:12,fontWeight:800,cursor:"pointer",marginTop:6,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {downloadLabel}</button>}
+          {blob&&!exporting&&typeof downloadLabel==="string"&&downloadLabel.includes("webm")&&(
+            <p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:6,lineHeight:1.5}}>
+              Won't preview in Apple Photos or WhatsApp? <a href="https://cloudconvert.com/webm-to-mp4" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
+            </p>
+          )}
           {!exporting&&!blob&&!warnText&&<p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:5}}>{exportHint||"Ready to render"}</p>}
         </div>
       </div>
@@ -1648,11 +1723,23 @@ function HookApp(){
       </div>
     </>
   );
+  const getHookSetupData=()=>({name,hookFont,hookColor,selIds:Array.from(sel)});
+  const loadHookSetupData=d=>{
+    if(!d)return;
+    if(d.name!==undefined)setName(d.name);
+    if(d.hookFont)setHookFont(d.hookFont);
+    if(d.hookColor)setHookColor(d.hookColor);
+    if(d.selIds&&d.selIds.length)setSel(new Set(d.selIds));
+    setBlob(null);
+  };
   const hookRight=(
-    <div className="card-white" style={{padding:"12px 14px"}}>
-      <SLabel n="05" title="Audio" color={C.green} opt/>
-      {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="hk-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:"#9ca3af"}}>♪ Drop MP3 / WAV</div></DZ>}
-    </div>
+    <>
+      <div className="card-white" style={{padding:"12px 14px"}}>
+        <SLabel n="05" title="Audio" color={C.green} opt/>
+        {audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="hk-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:"#9ca3af"}}>♪ Drop MP3 / WAV</div></DZ>}
+      </div>
+      <SaveSetupCard appId="hook" appColor={C.amber} getData={getHookSetupData} onLoad={loadHookSetupData}/>
+    </>
   );
   const hookCentre=(
     <>
@@ -2068,7 +2155,23 @@ function DropApp(){
       </div>
     </>
   );
-  const dropRight=(<div className="card-white" style={{padding:"12px 14px"}}><SLabel n="06" title="Audio" color={C.green} opt/>{audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="dp-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:"#9ca3af"}}>♪ Drop MP3 / WAV</div></DZ>}</div>);
+  const getDropSetupData=()=>({orig,sale,headline,style,dropFont,dropColor});
+  const loadDropSetupData=d=>{
+    if(!d)return;
+    if(d.orig)setOrig(d.orig);
+    if(d.sale)setSale(d.sale);
+    if(d.headline)setHeadline(d.headline);
+    if(d.style)setStyle(d.style);
+    if(d.dropFont)setDropFont(d.dropFont);
+    if(d.dropColor)setDropColor(d.dropColor);
+    setBlob(null);
+  };
+  const dropRight=(
+    <>
+      <div className="card-white" style={{padding:"12px 14px"}}><SLabel n="06" title="Audio" color={C.green} opt/>{audio?<AudioChip name={audio.name} dur={audio.dur} onRemove={()=>setAudio(null)}/>:<DZ id="dp-audio" accept="audio/*" onFiles={f=>{const file=f[0];if(!file)return;const u=URL.createObjectURL(file);const tmp=new Audio(u);tmp.onloadedmetadata=()=>setAudio({name:file.name,url:u,dur:tmp.duration})}} dragColor="rgba(52,211,153,0.6)" compact><div style={{fontSize:12,color:"#9ca3af"}}>♪ Drop MP3 / WAV</div></DZ>}</div>
+      <SaveSetupCard appId="drop" appColor={C.red} getData={getDropSetupData} onLoad={loadDropSetupData}/>
+    </>
+  );
   const dropCentre=(<CentrePreview canvasRef={prevRef} PW={PW} PH={PH} playing={playing} onToggle={()=>setPlaying(p=>!p)} accentColor={C.red} empty={!sale} emptyIcon="🔥" emptyText="Enter a sale price to preview"/>);
   return(
     <ThreeColLayout isDesktop={isDesktop} left={dropLeft} centre={dropCentre} right={dropRight}
@@ -2567,25 +2670,35 @@ function MySetupsPanel({open,onClose,onJump}){
   const{account,signOut}=useAccount();
   const[allSetups,setAllSetups]=useState({});
   const[loading,setLoading]=useState(true);
-  useEffect(()=>{
-    if(!open||!account)return;
-    (async()=>{
-      setLoading(true);
-      const byApp={};
-      for(const app of APPS){byApp[app.id]=await listSetups(app.id)}
-      setAllSetups(byApp);
-      setLoading(false);
-    })();
-  },[open,account]);
+  const[editingId,setEditingId]=useState(null);
+  const[editingName,setEditingName]=useState("");
+
+  const refresh=async()=>{
+    setLoading(true);
+    const byApp={};
+    for(const app of APPS){byApp[app.id]=await listSetups(app.id)}
+    setAllSetups(byApp);
+    setLoading(false);
+  };
+  useEffect(()=>{if(open&&account)refresh()},[open,account]);
   if(!open)return null;
   const hasAny=Object.values(allSetups).some(arr=>arr&&arr.length>0);
+
+  const startRename=s=>{setEditingId(s.id);setEditingName(s.name)};
+  const commitRename=async(appId,id)=>{
+    if(editingName.trim())await renameSetup(appId,id,editingName);
+    setEditingId(null);
+    refresh();
+  };
+
   return(
     <div style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,0.5)",display:"flex",alignItems:"center",justifyContent:"center",padding:20}} onClick={onClose}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:18,padding:"24px",width:480,maxWidth:"100%",maxHeight:"80vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
-        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:16}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:18,padding:"24px",width:520,maxWidth:"100%",maxHeight:"80vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,0.3)"}}>
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:4}}>
           <div style={{fontFamily:"'Montserrat',sans-serif",fontSize:18,fontWeight:800,color:"#0a0a0f"}}>My Setups</div>
           <button onClick={onClose} style={{background:"none",border:"none",fontSize:18,color:"#9ca3af",cursor:"pointer"}}>✕</button>
         </div>
+        <p style={{fontSize:11.5,color:"#9ca3af",marginBottom:16,marginTop:2}}>Saved tool settings only — not rendered videos. Click a name to rename it.</p>
         {loading&&<p style={{fontSize:12,color:"#9ca3af"}}>Loading…</p>}
         {!loading&&!hasAny&&<p style={{fontSize:12.5,color:"#6b7280",lineHeight:1.6}}>No saved setups yet. Open any tool, customise it, and hit Save in the "My Setups" card to keep it for later.</p>}
         {!loading&&APPS.map(app=>{
@@ -2599,10 +2712,21 @@ function MySetupsPanel({open,onClose,onJump}){
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:6}}>
                 {list.map(s=>(
-                  <button key={s.id} onClick={()=>{onJump(app.id);onClose()}} style={{display:"flex",alignItems:"center",justifyContent:"space-between",padding:"9px 12px",borderRadius:9,background:"#f8f8fc",border:"none",cursor:"pointer",textAlign:"left"}}>
-                    <span style={{fontSize:12.5,fontWeight:600,color:"#111118"}}>{s.name}</span>
-                    <span style={{fontSize:10,color:"#9ca3af"}}>{new Date(s.savedAt).toLocaleDateString()}</span>
-                  </button>
+                  <div key={s.id} style={{display:"flex",alignItems:"center",gap:8,padding:"9px 12px",borderRadius:9,background:"#f8f8fc"}}>
+                    {editingId===s.id?(
+                      <input autoFocus value={editingName} onChange={e=>setEditingName(e.target.value)}
+                        onKeyDown={e=>{if(e.key==="Enter")commitRename(app.id,s.id);if(e.key==="Escape")setEditingId(null)}}
+                        onBlur={()=>commitRename(app.id,s.id)}
+                        style={{flex:1,minWidth:0,padding:"4px 6px",borderRadius:6,border:`1px solid ${app.color}66`,fontSize:12.5,fontWeight:600,color:"#111118",outline:"none"}}/>
+                    ):(
+                      <button onClick={()=>{onJump(app.id);onClose()}} style={{flex:1,minWidth:0,textAlign:"left",background:"none",border:"none",cursor:"pointer",padding:0}}>
+                        <span style={{fontSize:12.5,fontWeight:600,color:"#111118"}}>{s.name}</span>
+                      </button>
+                    )}
+                    <span style={{fontSize:10,color:"#9ca3af",flexShrink:0}}>{new Date(s.savedAt).toLocaleDateString()}</span>
+                    <button onClick={()=>startRename(s)} style={{fontSize:11,color:"#9ca3af",background:"none",border:"none",cursor:"pointer",padding:"2px 4px",flexShrink:0}} title="Rename">✎</button>
+                    <button onClick={async()=>{await deleteSetup(app.id,s.id);refresh()}} style={{fontSize:11,color:"#ef4444",background:"none",border:"none",cursor:"pointer",padding:"2px 4px",flexShrink:0}} title="Delete">✕</button>
+                  </div>
                 ))}
               </div>
             </div>
