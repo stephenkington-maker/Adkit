@@ -525,7 +525,7 @@ function ExportArea({disabled,onRender,exporting,prog,blob,onDownload,label,stat
       {blob&&!exporting&&<button onClick={onDownload} style={{width:"100%",padding:"13px",borderRadius:10,border:"1px solid rgba(52,211,153,0.4)",background:"rgba(52,211,153,0.08)",color:"#6ee7b7",fontSize:14,fontWeight:800,cursor:"pointer",animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {label} · {(blob.size/1024/1024).toFixed(1)} MB</button>}
       {blob&&!exporting&&isWebm&&(
         <p style={{fontSize:9.5,color:"#9ca3af",textAlign:"center",margin:0,lineHeight:1.5}}>
-          Won't preview in Apple Photos or WhatsApp? <a href="https://cloudconvert.com/webm-to-mp4" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
+          Won't preview in Apple Photos or WhatsApp? <a href="https://www.canva.com/features/webm-to-mp4/" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
         </p>
       )}
     </div>
@@ -1460,7 +1460,7 @@ function FlickApp(){
           {blob&&!exporting&&<button onClick={download} style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid rgba(52,211,153,0.5)",background:"rgba(52,211,153,0.1)",color:"#059669",fontSize:12,fontWeight:800,cursor:"pointer",marginTop:6,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {audio?"+ Audio":""} .{ext} · {blob?(blob.size/1024/1024).toFixed(1):0} MB</button>}
           {blob&&!exporting&&ext==="webm"&&(
             <p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:6,lineHeight:1.5}}>
-              Won't preview in Apple Photos or WhatsApp? <a href="https://cloudconvert.com/webm-to-mp4" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
+              Won't preview in Apple Photos or WhatsApp? <a href="https://www.canva.com/features/webm-to-mp4/" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
             </p>
           )}
           {!exporting&&!blob&&!renderWarn&&<p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:5}}>{bgs.length===0?"Add backgrounds first":!logo&&overlayMode==="logo"?"Upload a logo first":"✓ Ready"}</p>}
@@ -1522,7 +1522,7 @@ function ThreeColLayout({left,centre,right,accentColor,canExport,onRender,export
           {blob&&!exporting&&<button onClick={onDownload} style={{width:"100%",padding:"10px",borderRadius:9,border:"1px solid rgba(52,211,153,0.5)",background:"rgba(52,211,153,0.1)",color:"#059669",fontSize:12,fontWeight:800,cursor:"pointer",marginTop:6,animation:"pulseGreen 1.6s ease-in-out infinite"}}>↓ Download {downloadLabel}</button>}
           {blob&&!exporting&&typeof downloadLabel==="string"&&downloadLabel.includes("webm")&&(
             <p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:6,lineHeight:1.5}}>
-              Won't preview in Apple Photos or WhatsApp? <a href="https://cloudconvert.com/webm-to-mp4" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
+              Won't preview in Apple Photos or WhatsApp? <a href="https://www.canva.com/features/webm-to-mp4/" target="_blank" rel="noopener noreferrer" style={{color:"#9ca3af",textDecoration:"underline"}}>Convert to MP4 free →</a>
             </p>
           )}
           {!exporting&&!blob&&!warnText&&<p style={{fontSize:9,color:"#9ca3af",textAlign:"center",marginTop:5}}>{exportHint||"Ready to render"}</p>}
